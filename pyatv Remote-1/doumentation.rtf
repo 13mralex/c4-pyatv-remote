@@ -1,0 +1,28 @@
+{\rtf1\fbidis\ansi\ansicpg1252\deff0\deflang1033{\fonttbl{\f0\fswiss\fprq2\fcharset0 Calibri Light;}{\f1\fswiss\fprq2\fcharset0 Calibri;}{\f2\froman\fprq2\fcharset2 Symbol;}{\f3\fmodern\fprq1\fcharset0 Courier New;}{\f4\fnil\fcharset0 Microsoft Sans Serif;}}
+{\colortbl ;\red47\green84\blue150;}
+{\stylesheet{ Normal;}{\s1 heading 1;}{\s2 heading 2;}}
+\viewkind4\uc1\pard\ltrpar\keep\keepn\s1\sb240\sl252\slmult1\cf1\f0\fs32 Apple TV IP Remote Control (pyatv)\par
+\pard\ltrpar\sa160\sl252\slmult1\cf0\f1\fs22\par
+\pard\ltrpar\keep\keepn\s2\sb40\sl252\slmult1\cf1\f0\fs26 Preparing the Linux Environment\par
+\pard\ltrpar\fi-360\li720\sa160\sl252\slmult1\cf0\f2\fs22\'b7\tab\f1 Ensure Python3 is installed with pip\par
+\f2\'b7\tab\f1 Install pyatv\par
+\pard\ltrpar\fi-360\li1440\sa160\sl252\slmult1\f3 o\tab pip3 install pyatv\f1\par
+\pard\ltrpar\fi-360\li720\sa160\sl252\slmult1\f2\'b7\tab\f1 Verify installation\par
+\pard\ltrpar\fi-360\li1440\sa160\sl252\slmult1\f3 o\tab atvremote --version\par
+\pard\ltrpar\fi-360\li720\sa160\sl252\slmult1\f2\'b7\tab\f1 Run the Webserver\par
+\pard\ltrpar\fi-360\li1440\sa160\sl252\slmult1\f3 o\tab python3 pyatv-webserver.py\par
+\pard\ltrpar\fi-360\li720\sa160\sl252\slmult1\f2\'b7\tab\f1 Server is now running on port 8080\par
+\pard\ltrpar\keep\keepn\s2\sb40\sl252\slmult1\cf1\f0\fs26 Pairing Apple TV\par
+\pard\ltrpar\fi-360\li720\sa160\sl252\slmult1\cf0\f2\fs22\'b7\tab\f1 Run the Scan Devices action from Composer\par
+\f2\'b7\tab\f1 Verify output in the Lua console, which will dump all Apple Related devices and protocols\par
+\f2\'b7\tab\f1 The Device Selector property will populate with available devices\par
+\f2\'b7\tab\f1 Select the desired device, the Protocols and Device ID property will populate\par
+\f2\'b7\tab\f1 Select MRP for remote commands, Companion to launch apps\par
+\f2\'b7\tab\f1 After setting the protocol, the device will display a PIN on screen\par
+\f2\'b7\tab\f1 Enter the PIN in Composer\par
+\f2\'b7\tab\f1 Run the Test Connection action to verify everything works\par
+\f2\'b7\tab\f1 The Lua console will display the result\par
+\pard\ltrpar\keep\keepn\s2\sb40\sl252\slmult1\cf1\f0\fs26 Notes\par
+\pard\ltrpar\fi-360\li720\sa160\sl252\slmult1\cf0\f2\fs22\'b7\tab\f1 I threw in some MiniApps to experiment with Universal Drivers via Programming\par
+\pard\ltrpar\f4\fs17\par
+}

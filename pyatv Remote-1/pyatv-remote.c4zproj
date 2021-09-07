@@ -1,0 +1,11 @@
+﻿<Driver type="c4z" name="pyatv-remote">
+ <Items>
+  <Item type="dir" c4zDir="www" name="www" recurse="true" exclude="false" />
+  <Item type="file" name="driver.lua" />
+  <Item type="file" name="driver.xml" />
+  <Item type="file" name="JSON.lua" />
+  <Item type="file" name="protocols.lua" />
+  <Item type="file" name="scan.lua" />
+  <Item type="file" name="doumentation.rtf" />
+ </Items>
+</Driver>
