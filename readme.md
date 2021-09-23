@@ -5,15 +5,15 @@
 
 ·	Install pyatv
 
-o	pip3 install pyatv
+    pip3 install pyatv
 
 ·	Verify installation
 
-o	atvremote --version
+    atvremote --version
 
 ·	Run the Webserver
 
-o	python3 pyatv-webserver.py
+    python3 pyatv-webserver.py
 
 ·	Server is now running on port 8080
 ## Pairing Apple TV
