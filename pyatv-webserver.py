@@ -124,9 +124,11 @@ async def pair2(request):
         #pairing = await pyatv.pair(atvs[0], Protocol.proto1, loop)
         pairing.pin(pin)
         await pairing.finish()
+        creds = pairing.service.credentials
+        response = {"status":"Successfully paired with "+proto1,"protocol":proto1,"credentials":creds}
     except Exception as ex:
         return web.Response(text=f"Pairing Failed with pin {pin}: Error: {ex}")
-    return web.Response(text=f"Successfully Paired Protocol: {proto1}")
+    return web.json_response(response)
 
 @routes.get("/connect/{id}")
 async def connect(request):
