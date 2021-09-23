@@ -42,6 +42,18 @@
         <default></default>
         <readonly>true</readonly>
       </property>
+      <property>
+        <name>AirPlay Credentials</name>
+        <type>STRING</type>
+        <default></default>
+        <readonly>true</readonly>
+      </property>
+      <property>
+        <name>Companion Credentials</name>
+        <type>STRING</type>
+        <default></default>
+        <readonly>true</readonly>
+      </property>
     </properties>
     <commands>
       <!--Defines what appears in Composer's Programming tab in the Device Specific Commands dropdown for this device when selected in Actions pane-->

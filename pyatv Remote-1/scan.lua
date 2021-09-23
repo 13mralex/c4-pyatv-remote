@@ -8,7 +8,7 @@ device_id = {}
 current_pairing_device = {}
 
 function scan_devices()
-    --print("Starting device scan...")
+    print("Starting device scan...")
     ip = Properties["Server IP"].."/scan"
     C4:urlGet(ip)
     --print("Calling IP: "..ip)
@@ -86,17 +86,26 @@ function pair3(pin)
     print("Calling URL: "..url)
     C4:urlGet(url)
     function ReceivedAsync(ticketId, strData)
-	   print("Result: "..strData)
+	   --print("Result: "..strData)
+	   array = JSON:decode(strData)
+	   print("Result: "..array["status"])
+	   print("---UPDATING "..array["protocol"].." Credentials".." TO value"..array["credentials"])
+	   print("------")
+	   C4:UpdateProperty(array["protocol"].." Credentials", array["credentials"])
+	   C4:UpdateProperty("Pairing Code", "")
+	   C4:UpdateProperty("Protocol to Pair", "")
+	   connect_device()
     end
-    C4:UpdateProperty("Pairing Code", "")
-    connect_device()
+
 end
 
 function connect_device()
+    airplay_creds = Properties["AirPlay Credentials"]
+    companion_creds = Properties["Companion Credentials"]
     name = Properties["Device Selector"]
     id = Properties["Device ID"]
     print("Connecting to "..name)
-    ip = Properties["Server IP"].."/connect/"..id
+    ip = Properties["Server IP"].."/connect/"..id.."?airplay="..airplay_creds.."&companion="..companion_creds
     C4:urlGet(ip)
     function ReceivedAsync(ticketId, strData)
 	   print("Result: "..strData)

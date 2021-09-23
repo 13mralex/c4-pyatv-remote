@@ -25,7 +25,7 @@ o	python3 pyatv-webserver.py
 
 ·	Select the desired device, the Protocols and Device ID property will populate
 
-·	Select MRP for remote commands, Companion to launch apps
+·	Select AirPlay for remote commands, Companion to launch apps
 
 ·	After setting the protocol, the device will display a PIN on screen
 
