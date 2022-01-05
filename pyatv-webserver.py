@@ -168,13 +168,6 @@ async def remote_control(request, atv):
     return web.Response(text="OK")
 
 @routes.get("/playing/{id}")
-async def scan(request):
-    id = request.match_info["id"]
-    cmd = "atvscript playing -i '"+id+"'"
-    results = os.popen(cmd).read()
-    return web.Response(text=results)
-
-@routes.get("/playing1/{id}")
 @web_command
 async def playing(request, atv):
     try:
@@ -246,12 +239,27 @@ async def artwork0(request, atv):
         return web.Response(text=f"Artwork get failed: {ex}")
     return web.Response(text=str(result))
 
+@routes.get("/app_list/{id}")
+@web_command
+async def app_list(request, atv):
+    apps = atv.apps
+    try:
+        app_list = await apps.app_list()
+        data = {}
+        data["Apps"] = {}
+        for app in app_list:
+            data["Apps"][app.name] = app.identifier
+    except Exception as ex:
+        return web.Response(text=f"failed listing apps: error: {ex}")
+    return web.json_response(data)
+
 @routes.get("/launch_app/{id}/{app_id}")
 @web_command
-async def art_h(request, atv):
+async def launch_app(request, atv):
     app_id = request.match_info["app_id"]
+    apps = atv.apps
     try:
-        status = await atv.apps.launch_app(app_id)
+        status = await apps.launch_app(app_id)
     except Exception as ex:
         return web.Response(text=f"failed launching {app_id}: error: {ex}")
     return web.Response(text=f"Launched app: {app_id}")
@@ -300,7 +308,8 @@ def main():
     app["clients"] = {}
     app.add_routes(routes)
     app.on_shutdown.append(on_shutdown)
-    web.run_app(app)
+    listen_port = 8081
+    web.run_app(app, port=listen_port)
 
 
 if __name__ == "__main__":
