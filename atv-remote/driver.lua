@@ -63,10 +63,12 @@ do	--Globals
 	-----------------------------------------------------------------------------------------------
 	APPLE_TV = { 
 		['Apple TV']			= 'com.apple.TVWatchList', -- Returned as "TV" from ATV App List
-		['Disney Plus']			= 'com.disney.disneyplus', -- Returned as "Disney+" from ATV App List
+		['Disney Plus']		= 'com.disney.disneyplus', -- Returned as "Disney+" from ATV App List
 		['Amazon Prime Video']	= 'com.amazon.aiv.AIVApp', -- Returned as "Prime Video" from ATV App List
 		['ABC iView']			= 'au.net.abc.ABCiView',   -- Returned as "ABC iview" from ATV App List
-		['TenPlay']				= 'com.networkten.epg',    -- Returned as "10 play" from ATV App List
+		['TenPlay']			= 'com.networkten.epg',    -- Returned as "10 play" from ATV App List
+		['Hulu']				= 'com.hulu.plus',
+		['YouTube']			= 'com.google.ios.youtube',
 	} --['C4 Mini App Name']    = 'ATV App ID'             -- ATV App List output to Lua Output window by turning on Debug Mode and run Test Connection in actions.
 
 end
@@ -1137,7 +1139,9 @@ function MakeImageList (data)
     --local defaultItem = data["url"]
     defaultSizes = {512}
     image_list = {}
-	if (artwork_info["url"]) and (artwork_info["width"]) and (artwork_info["height"]) (data["hash"]) then
+    w = tonumber(artwork_info["width"])
+    h = tonumber(artwork_info["height"])
+	if (artwork_info["url"]) and w and h and (data["hash"]) then
 		--print("Make image list...URL: "..artwork_info["url"])
 		for _, size in ipairs(defaultSizes) do
 			imageUrl = artwork_info["url"].."?"..data["hash"]
@@ -1262,6 +1266,8 @@ function UpdateQueue (data, navId, roomId, seq)
 	end
     prog = data["Position"]
     duration = 0
+    queue = ""
+    queueInfo = ""
     if (prog) then
         if string.find(prog, "/") then
 			--print (elapsed.." --|-- "..duration)
@@ -1278,12 +1284,16 @@ function UpdateQueue (data, navId, roomId, seq)
 			duration = prog
 			label = "LIVE"
         end
+    else
+	   dbg ("prog is nil")
     end
 	if (data["Title"]) and (data["Artist"]) and (data["ImageUrl"]) then
-		local queue = {
+		queue = {
 			{title = 'Now Playing', isHeader = true},
 			{title = data["Title"], subtitle = data["Artist"], duration = ConvertTime(duration-0), ImageUrl = data["ImageUrl"]},
 		}
+     else
+	   dbg ("data is nil")
 	end
     local tags = {
         can_shuffle = true,
@@ -1298,16 +1308,20 @@ function UpdateQueue (data, navId, roomId, seq)
 			table.insert(list, XMLTag("item", item))
 		end
 		list = table.concat(list)
-		local queueInfo = {
+		queueInfo = {
 			List = list, -- The entire list that will be displayed for the queue
 			NowPlayingIndex = 1, -- The item (0-indexed) that will be marked as current in the queue (blue marker on the Android navigators)
 			NowPlaying = XMLTag(tags) -- The tags that will be applied to all ActionIds from the NowPlaying section of the XML to determine what actions are shown
 		}
+     else
+		dbg ("queue is nil")
 	end
     --DataReceived(5001, navId, seq, queueInfo)
 	if (queueInfo) then
 		SendEvent(5001, nil, nil, "QueueChanged", queueInfo)
 		dbg ("Queue Done")
+     else
+	   dbg ("queueInfo is nil")
 	end
 end
 
