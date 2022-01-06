@@ -1,12 +1,24 @@
 import asyncio
 from aiohttp import WSMsgType, web
 import pyatv
+from pyatv.interface import (
+    App,
+    DeviceListener,
+    Playing,
+    PowerListener,
+    PushListener,
+    RemoteControl,
+    retrieve_commands,
+)
+from enum import Enum
+import datetime
 from pyatv.const import Protocol
 import base64
 from io import BytesIO
 import os
 import json
-#from PIL import Image
+import urllib.request
+import requests
 
 PAGE = """
 <script>
@@ -39,6 +51,11 @@ socket.onerror = function(error) {
 
 routes = web.RouteTableDef()
 
+APPLE_BUNDLES = {}
+APPLE_BUNDLES["com.apple.TVMusic"]      = "com.apple.Music"
+APPLE_BUNDLES["com.apple.TVWatchList"]  = "com.apple.tv"
+APPLE_BUNDLES["com.apple.TVShows"]   	= "com.apple.MobileStore"
+APPLE_BUNDLES["com.apple.TVMovies"]   	= "com.apple.MobileStore"
 
 class DeviceListener(pyatv.interface.DeviceListener, pyatv.interface.PushListener):
     def __init__(self, app, identifier):
@@ -80,6 +97,63 @@ def add_credentials(config, query):
         proto_name = service.protocol.name.lower()
         if proto_name in query:
             config.set_credentials(service.protocol, query[proto_name])
+
+
+def output(success: bool, error=None, exception=None, values=None):
+    """Produce output in intermediate format before conversion."""
+    now = datetime.datetime.now(datetime.timezone.utc).astimezone().isoformat()
+    result = {"result": "success" if success else "failure", "datetime": str(now)}
+    if error:
+        result["error"] = error
+    if exception:
+        result["exception"] = str(exception)
+        result["stacktrace"] = "".join(
+            traceback.format_exception(
+                type(exception), exception, exception.__traceback__
+            )
+        )
+    if values:
+        result.update(**values)
+    return json.dumps(result)
+
+
+def output_playing(playing: Playing, app: App):
+    """Produce output for what is currently playing."""
+
+    def _convert(field):
+        if isinstance(field, Enum):
+            return field.name.lower()
+        return field if field else "none"
+
+    commands = retrieve_commands(Playing)
+    values = {k: _convert(getattr(playing, k)) for k in commands}
+    if app:
+        values["app"] = app.name
+        values["app_id"] = app.identifier
+        values["app_icon"] = getAppIcon(app.identifier)
+    else:
+        values["app"] = "none"
+        values["app_id"] = "none"
+    return output(True, values=values)
+
+
+def getAppIcon(bundle_id):
+    """print("App icon request for: "+bundle_id)"""
+    url = "http://itunes.apple.com/lookup?bundleId="
+    if bundle_id in APPLE_BUNDLES:
+        bundle_id = APPLE_BUNDLES[bundle_id]
+    else:
+        bundle_id = bundle_id
+    url = url+bundle_id
+    """print("Calling url: "+url)"""
+    r = requests.get(url)
+    r = r.content
+    r = json.loads(r)
+    if r['resultCount'] is 0:
+        result = ''
+    else:
+        result = r['results'][0]['artworkUrl512']
+    return result
 
 
 @routes.get("/state/{id}")
@@ -171,7 +245,8 @@ async def remote_control(request, atv):
 @web_command
 async def playing(request, atv):
     try:
-        status = await atv.metadata.playing()
+        status = output_playing(await atv.metadata.playing(), atv.metadata.app)
+        
     except Exception as ex:
         return web.Response(text=f"Remote control command failed: {ex}")
     return web.Response(text=str(status))
@@ -238,6 +313,15 @@ async def artwork0(request, atv):
     except Exception as ex:
         return web.Response(text=f"Artwork get failed: {ex}")
     return web.Response(text=str(result))
+
+@routes.get("/app/{id}")
+@web_command
+async def artstats(request, atv):
+    try:
+        status = atv.metadata.app
+    except Exception as ex:
+        return web.Response(text=f"Remote control command failed: {ex}")
+    return web.Response(text=str(status))
 
 @routes.get("/app_list/{id}")
 @web_command
@@ -308,7 +392,7 @@ def main():
     app["clients"] = {}
     app.add_routes(routes)
     app.on_shutdown.append(on_shutdown)
-    listen_port = 8081
+    listen_port = 8080
     web.run_app(app, port=listen_port)
 
 

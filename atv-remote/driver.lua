@@ -32,26 +32,26 @@ do	--Globals
 		LEFT 			= 'left',
 		RIGHT 			= 'right',
 		ENTER 			= 'select',
-		START_UP 		= 'up',
+		START_UP 			= 'up',
 		START_DOWN 		= 'down',
 		START_LEFT 		= 'left',
-		START_RIGHT 	= 'right',
-		STOP_UP 		= 'up',
+		START_RIGHT 		= 'right',
+		STOP_UP 			= 'up',
 		STOP_DOWN 		= 'down',
 		STOP_LEFT 		= 'left',
 		STOP_RIGHT 		= 'right',
 		PLAY 			= 'play',
 		PAUSE 			= 'pause',
-		PLAYPAUSE		= 'play',
+		PLAYPAUSE			= 'play',
 		STOP 			= 'stop',
-		SCAN_FWD 		= 'next',
-		SCAN_REV 		= 'previous',
-		SKIP_FWD 		= 'next',
-		SKIP_REV 		= 'previous',
+		SCAN_FWD 			= 'next',
+		SCAN_REV 			= 'previous',
+		SKIP_FWD 			= 'next',
+		SKIP_REV 			= 'previous',
 		START_SCAN_FWD 	= 'next',
 		START_SCAN_REV 	= 'previous',
-		STOP_SCAN_FWD 	= 'next',
-		STOP_SCAN_REV 	= 'previous'
+		STOP_SCAN_FWD 		= 'next',
+		STOP_SCAN_REV 		= 'previous'
 	}
 
 	APP_LIST = {} --- For dynamic app list pulled from PyATV :)
@@ -70,6 +70,27 @@ do	--Globals
 		['Hulu']				= 'com.hulu.plus',
 		['YouTube']			= 'com.google.ios.youtube',
 	} --['C4 Mini App Name']    = 'ATV App ID'             -- ATV App List output to Lua Output window by turning on Debug Mode and run Test Connection in actions.
+	
+	APPLE_BUNDLES = {}
+	APPLE_BUNDLES["name"] = {
+	   ["com.apple.Arcade"]			= "Apple Arcade",
+	   ["com.apple.TVAppStore"]		= "App Store",
+	   ["com.apple.TVHomeSharing"]	= "Home Sharing",
+	   ["com.apple.TVMovies"]		= "iTunes Movies",
+	   ["com.apple.TVMusic"]			= "Apple Music",
+	   ["com.apple.TVPhotos"]		= "Photos",
+	   ["com.apple.podcasts"]		= "Apple Podcasts",
+	   ["com.apple.TVSearch"]		= "Search",
+	   ["com.apple.TVSettings"]		= "Settings",
+	   ["com.apple.TVWatchList"]		= "Apple TV+",
+	   ["com.apple.TVShows"]			= "iTunes Shows",
+     }
+	APPLE_BUNDLES["iOS Bundle"] = {
+	   ["com.apple.TVMusic"]			= "com.apple.Music",
+	   ["com.apple.TVSearch"]		= "com.apple.tv",
+	   ["com.apple.TVWatchList"]		= "com.apple.tv",
+	   ["com.apple.TVShows"]			= "com.apple.tv",
+     }
 
 end
 
@@ -302,26 +323,31 @@ function PYATV.pollMediaInfo (source, navId, roomId, seq) --pollMediaInfo
 	C4:urlGet(url, {}, false,
 		function(ticketId, strData, responseCode, tHeaders, strError)
 			if (strError == nil) then
-				array = ConvertToArray(strData)
-				if (array["Title"]) then
-					array["hash"] = C4:Base64Encode(array["Title"])
-				end
-				if (array["Device state"] ~= "Idle") then
+				--array = ConvertToArray(strData)
+				array = JSON:decode(strData)
+				--if (array["title"]) then
+				--	array["hash"] = C4:Base64Encode(array["title"])
+				--end
+				if (array["device_state"] ~= "Idle") then
 					imageURL = "http://"..Properties["Server IP"]..":"..Properties["Server Port"].."/art/"..Properties["Device ID"].."/art.png"
 					array["ImageUrl"] = imageURL
 					if (array["hash"] ~= nil) then
-						array["image"] = C4:Base64Encode(imageURL.."?"..array["hash"])
+						array["image"] = C4:Base64Encode(imageURL.."?"..C4:Base64Encode(array["hash"]))
 					end
 				else
 					array["image"] = nil
+				end
+				if (array["app_id"]) then
+				    --dbg ("---ID & Name Match: "..array["app"])
+				    array["app"] = APPLE_BUNDLES["name"][array["app_id"]] or array["app"]
+				    --dbg ("---ID & Name Change to: "..APPLE_BUNDLES["name"][array["app_id"]])
 				end
 				if (init == "new") then
 					PYATV.preMakeImageList(array)
 				end
 				if (array["state"]) then
-					array["Device state"] = array["state"]
+					array["device_state"] = array["state"]
 				end
-				array["total_time"] = 0
 				if (source == "proxy") then
 					dbg ("Media request from proxy")
 					UpdateMediaInfo(array)
@@ -329,15 +355,21 @@ function PYATV.pollMediaInfo (source, navId, roomId, seq) --pollMediaInfo
 					UpdateDashboard(array)
 					UpdateProgress(array)
 				end
-				if (device_array["Title"] == array["Title"]) then
+				if (device_array["title"] == array["title"]) then
 					dbg ("Arrays equal, not updating")
 				else
 					dbg ("Arrays not equal, updating")
+					if (init=="old") then
+					   dbg ("init: "..init)
+					   dbg ("device array: "..device_array["title"].." array: "..array["title"])
+				     else
+					   dbg ("init: "..init)
+				     end
 					UpdateMediaInfo(array)
 					UpdateQueue(array)
 					UpdateDashboard(array)
 				end
-				if (device_array["Position"] == array["Position"]) then
+				if (device_array["position"] == array["position"]) then
 					dbg ("Progress equal, not updating")
 				else
 					dbg ("Progress not equal, updating")
@@ -345,9 +377,9 @@ function PYATV.pollMediaInfo (source, navId, roomId, seq) --pollMediaInfo
 					UpdateDashboard(array)
 				end
 				device_array = array
-				if (array["Device state"]) and (array["Media type"]) then
-					C4:SetVariable("Play State", array["Device state"])
-					C4:SetVariable("Media Type", array["Media type"])
+				if (array["device_state"]) and (array["media_type"]) then
+					C4:SetVariable("Play State", array["device_state"])
+					C4:SetVariable("Media Type", array["media_type"])
 				end
 				dbg ("---Polling Complete---")
 				init = "old"
@@ -373,7 +405,7 @@ function PYATV.preMakeImageList(array) -- ORIGINAL: preMakeImageList
 					e = c:match("=(.*)")
 					f = d:match("=(.*)")
 					art_url = "http://"..Properties["Server IP"]..":"..Properties["Server Port"].."/art/"..Properties["Device ID"].."/art.png"
-					art_url = art_url.."?"..array["hash"]
+					art_url = art_url.."?"..C4:Base64Encode(array["hash"])
 					artwork_info["width"] = e
 					artwork_info["height"] = f
 					artwork_info["url"] = art_url
@@ -1130,27 +1162,39 @@ function SendEvent (idBinding, navId, roomId, name, args)
 end
 
 -- Update Navigator
-function MakeImageList (data)
+function MakeImageList (iconInfo)
 	--dbg ("MakeImageList Starting..")
-	if (data == nil) then
+	if (iconInfo == nil) then
 		print("MakeImageList data nil, ending..")
 		return
 	end
     --local defaultItem = data["url"]
     defaultSizes = {512}
     image_list = {}
-    w = tonumber(artwork_info["width"])
-    h = tonumber(artwork_info["height"])
-	if (artwork_info["url"]) and w and h and (data["hash"]) then
-		--print("Make image list...URL: "..artwork_info["url"])
-		for _, size in ipairs(defaultSizes) do
-			imageUrl = artwork_info["url"].."?"..data["hash"]
-			width = artwork_info["width"]
-			height = artwork_info["height"]
-			table.insert (image_list, '<image_list width="'..width..'" height="'..height..'">'..imageUrl..'</image_list>')
-		end
-	end
-    return image_list
+    w = iconInfo["width"]
+    h = iconInfo["height"]
+    if (h and w) then
+	   h = tonumber(iconInfo["height"])
+	   w = tonumber(iconInfo["width"])
+	   
+	   --print("INIT make image list... URL: "..iconInfo["url"].." width: "..w.." height: "..h)
+	    if (iconInfo["url"]) and w and h then
+		    --print("START Make image list...URL: "..iconInfo["url"])
+		    --for _, size in ipairs(defaultSizes) do
+			    imageUrl = iconInfo["url"]
+			    width = w
+			    height = h
+			    table.insert (image_list, '<image_list width="'..width..'" height="'..height..'">'..imageUrl..'</image_list>')
+		    --end
+	    else
+		  --print("FAIL Make image list...")
+	    end
+		--print("FINISH Make image list...")
+	   return image_list
+    else
+	   return
+    end
+    
 end
 
 function UpdateDashboard (data, navId, roomId, seq)
@@ -1163,34 +1207,30 @@ function UpdateDashboard (data, navId, roomId, seq)
         "SkipFwd",
         "SkipRev"
     }
-    prog = data["Position"]
+    position = data["position"]
+    total_time = data["total_time"] or "none"
     live = false
-    duration = 0
-    if (prog) then
-        if string.find(prog, "/") then
-            dbg ("Song is not live... Progress: "..prog)
-            prog = prog:gsub("%b()", "")
-            prog = prog:sub(1, -3)
+    if (total_time) then
+        if total_time ~= "none" then
+            dbg ("Song is not live... Progress: "..position)
             live = false
-            elapsed, duration = prog:match("(.+)/(.+)")
-            dbg (elapsed.." --|-- "..duration)
-            label = ConvertTime(elapsed - 0).." / -"..ConvertTime(duration - elapsed)
+            dbg (position.." --|-- "..total_time)
+            label = ConvertTime(position - 0).." / -"..ConvertTime(total_time - position)
         else
-            dbg ("Song is live... Progress: "..prog)
+            dbg ("Song is live... Progress: "..position)
             live = true
-            elapsed = prog
             label = "LIVE"
         end
     end
-    if (live == true) and (data["Device state"] == "Playing") then
+    if (live == true) and (data["device_state"] == "playing") then
         dashboardInfo = {
             Items = "Stop" -- items to display, in order, on Dashboard of Now Playing bar.  Single-space separated list of Id values
         }
-    elseif (live == true) and (data["Device state"] == "Paused") then
+    elseif (live == true) and (data["device_state"] == "paused") then
         dashboardInfo = {
             Items = "Play" -- items to display, in order, on Dashboard of Now Playing bar.  Single-space separated list of Id values
         }
-    elseif (data["Device state"] == "Playing") then
+    elseif (data["device_state"] == "playing") then
         dashboardInfo = {
             Items = "SkipRev Pause SkipFwd" -- items to display, in order, on Dashboard of Now Playing bar.  Single-space separated list of Id values
         }
@@ -1199,7 +1239,7 @@ function UpdateDashboard (data, navId, roomId, seq)
             Items = "SkipRev Play SkipFwd" -- items to display, in order, on Dashboard of Now Playing bar.  Single-space separated list of Id values
         }
     end
-    playstate = data["Device state"]
+    playstate = data["device_state"]
     --DataReceived(5001, navId, seq, dashboardInfo)
     SendEvent(5001, nil, nil, "DashboardChanged", dashboardInfo)
 end
@@ -1207,12 +1247,18 @@ end
 function UpdateMediaInfo (data, navId, roomId, seq)
     -- Updates the Now Playing area of the media bar and also the main section on the left of the Now Playing screen.  Doesn't affect the Queue side at all.
     local args = {
-        TITLE = data["Title"] or '',
-        ALBUM = data["Album"] or '',
-        ARTIST = data["Artist"] or '',
-        GENRE = data["Genre"] or '',
+        TITLE = data["title"] or '',
+        ALBUM = data["album"] or '',
+        ARTIST = data["artist"] or '',
+        GENRE = data["genre"] or '',
         IMAGEURL = data["image"] or ''
     }
+    for k,v in pairs(args) do
+	   if (v == "none") then
+		  args[k] = nil
+	   end
+    end
+    
     --if (data["image"] ~= nil) then
 		--local decoded_img = C4:Base64Decode(data["image"])
 		--print("Image: "..decoded_img)
@@ -1222,27 +1268,23 @@ function UpdateMediaInfo (data, navId, roomId, seq)
     --UpdateQueue(data,image)
 end
 
-function UpdateProgress (prog, navId, roomId, seq)
-    prog = prog["Position"]
-    live = nil
-    a, b = nil
+function UpdateProgress (data, navId, roomId, seq)
     label = "Not playing"
-    duration = 0
-    elapsed = 0
-    if (prog) then
-        if string.find(prog, "/") then
-            dbg ("Song is not live... Progress: "..prog)
-            prog = prog:gsub("%b()", "")
-            prog = prog:sub(1, -3)
+    position = data["position"]
+    total_time = data["total_time"] or "none"
+    live = false
+    if (total_time) then
+        if total_time ~= "none" then
+            dbg ("Song is not live... Progress: "..position)
             live = false
-            elapsed, duration = prog:match("(.+)/(.+)")
-            dbg (elapsed.." --|-- "..duration)
-            label = ConvertTime(elapsed - 0).." / -"..ConvertTime(duration - elapsed)
+            dbg (position.." --|-- "..total_time)
+            label = ConvertTime(position - 0).." / -"..ConvertTime(total_time - position)
         else
-            dbg ("Song is live... Progress: "..prog)
+            dbg ("Song is live... Progress: "..position)
             live = true
-            elapsed = prog
             label = "LIVE"
+		  total_time = nil
+		  position = nil
         end
     end
     --local duration = math.random (100, 500)
@@ -1250,8 +1292,8 @@ function UpdateProgress (prog, navId, roomId, seq)
     --local label = ConvertTime (prog)..' / -'..ConvertTime (duration - elapsed)
     label0 = label
     local progressInfo = {
-        length = duration, -- integer for setting size of duration bar
-        offset = elapsed, -- integer for setting size of elapsed indicator inside duration bar
+        length = total_time, -- integer for setting size of duration bar
+        offset = position, -- integer for setting size of elapsed indicator inside duration bar
         label = label0 -- text string to be displayed next to duration bar
     }
     --DataReceived(5001, navId, seq, progressInfo)
@@ -1264,37 +1306,46 @@ function UpdateQueue (data, navId, roomId, seq)
 		print("UpdateQueue no data, exiting!")
 		return
 	end
-    prog = data["Position"]
+    --prog = data["position"]
     duration = 0
-    queue = ""
-    queueInfo = ""
-    if (prog) then
-        if string.find(prog, "/") then
-			--print (elapsed.." --|-- "..duration)
-			--label = ConvertTime (elapsed-0)..' / -'..ConvertTime (duration-elapsed)
-			dbg ("Song is not live... Progress: "..prog)
-			prog = prog:gsub("%b()", "")
-			prog = prog:sub(1, -3)
-			live = false
-			elapsed, duration = prog:match("(.+)/(.+)")
+    position = data["position"]
+    total_time = data["total_time"] or "none"
+    live = false
+    if (total_time) then
+        if total_time ~= "none" then
+            dbg ("Song is not live... Progress: "..position)
+            live = false
+            dbg (position.." --|-- "..total_time)
+            label = ConvertTime(position - 0).." / -"..ConvertTime(total_time - position)
+		  duration = ConvertTime(total_time - 0)
         else
-			dbg ("Song is live... Progress: "..prog)
-			live = true
-			prog = prog:sub(1, -2)
-			duration = prog
-			label = "LIVE"
+            dbg ("Song is live... Progress: "..position)
+            live = true
+            label = "LIVE"
+		  duration = nil
         end
-    else
-	   dbg ("prog is nil")
     end
-	if (data["Title"]) and (data["Artist"]) and (data["ImageUrl"]) then
+    for k,v in pairs(data) do
+	   if (v == "none") then
+		  data[k] = nil
+	   end
+    end
+	if (data["title"]) then
 		queue = {
 			{title = 'Now Playing', isHeader = true},
-			{title = data["Title"], subtitle = data["Artist"], duration = ConvertTime(duration-0), ImageUrl = data["ImageUrl"]},
+			{title = data["title"], subtitle = data["artist"], duration = duration, ImageUrl = data["app_icon"]},
+			{title = 'Service', isHeader = true},
+			{title = data["app"], ImageUrl = data["app_icon"]},
 		}
      else
 	   dbg ("data is nil")
+	   queue = {
+			{title = 'Service', isHeader = true},
+			{title = data["app"], ImageUrl = data["app_icon"]},
+		}
 	end
+	--print("APP ICON URL: "..data["app_icon"])
+	--print("SONG ICON URL: "..data["ImageUrl"])
     local tags = {
         can_shuffle = true,
         can_repeat = true,
@@ -1303,10 +1354,36 @@ function UpdateQueue (data, navId, roomId, seq)
     }
     local list = {}
 	if (queue) then
+	     icon = {}
+	     icon["url"] = data["app_icon"]
+		icon["width"] = 512
+		icon["height"] = 512
+	
 		for _, item in ipairs(queue) do
-			item.image_list = MakeImageList(data)
-			table.insert(list, XMLTag("item", item))
+			 if (item["title"] == 'Now Playing') then
+				table.insert(list, XMLTag("item", item))
+			 end
+			 if (item["title"] == data["title"]) then
+				--print("make image list for Now Playing")
+				item.image_list = MakeImageList(artwork_info)
+				table.insert(list, XMLTag("item", item))
+			 end
+			 if (item["title"] == 'Service') then
+				table.insert(list, XMLTag("item", item))
+			 end
+			 if (item["title"] == data["app"]) then
+				--print("make image list for App")
+				item.image_list = MakeImageList(icon)
+				table.insert(list, XMLTag("item", item))
+			 end
 		end
+		
+	     --item.image_list = MakeImageList(artwork_info)
+	     --table.insert(list, XMLTag("item", item))
+		
+		--item.image_list = MakeImageList(icon)
+	     --table.insert(list, XMLTag("item", item))
+
 		list = table.concat(list)
 		queueInfo = {
 			List = list, -- The entire list that will be displayed for the queue

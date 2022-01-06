@@ -1,1002 +1,1002 @@
 <devicedata>
-	<copyright>Copyright 2021 Control4. All rights reserved.</copyright>
-	<creator>Original by Alex Martin (Mod by Welton Cartel)</creator>
-	<manufacturer>Apple</manufacturer>
-	<name>Apple TV Control</name>
-	<model>TV</model>
-	<created>09/15/2021 12:00 AM</created>
-	<modified>09/30/2021 12:00 AM</modified>
-	<version>33</version>
-	<control>lua_gen</control>
-	<driver>DriverWorks</driver>
-	<small image_source="c4z">icons/device_sm.png</small>
-	<large image_source="c4z">icons/device_lg.png</large>
-	<composer_categories>
-		<category>Audio/Video</category>
-	</composer_categories>
-	<config>
-		<script file="driver.lua"/>
-		<properties>
-			<property>
-				<name>Debug Mode</name>
-				<type>LIST</type>
-				<items>
-					<item>Off</item>
-					<item>On</item>
-				</items>
-				<default>Off</default>
-				<readonly>false</readonly>
-			</property>
-			<property>
-				<name>Server IP</name>
-				<type>STRING</type>
-				<default/>
-				<readonly>false</readonly>
-			</property>
-			<property>
-				<name>Server Port</name>
-				<type>STRING</type>
-				<default>8080</default>
-				<readonly>false</readonly>
-			</property>
-			<property>
-				<name>Device Selector</name>
-				<type>DYNAMIC_LIST</type>
-			</property>
-			<property>
-				<name>Protocol to Pair</name>
-				<type>DYNAMIC_LIST</type>
-			</property>
-			<property>
-				<name>Pairing Code</name>
-				<type>STRING</type>
-				<default/>
-			</property>
-			<property>
-				<name>Device ID</name>
-				<type>STRING</type>
-				<default/>
-				<readonly>true</readonly>
-			</property>
-			<property>
-				<name>AirPlay Credentials</name>
-				<type>STRING</type>
-				<default/>
-				<readonly>true</readonly>
-			</property>
-			<property>
-				<name>Companion Credentials</name>
-				<type>STRING</type>
-				<default/>
-				<readonly>true</readonly>
-			</property>
-			<property>
-				<name>Passthrough Mode</name>
-				<type>LIST</type>
-				<items>
-					<item>Off</item>
-					<item>On</item>
-				</items>
-				<default>Off</default>
-				<readonly>false</readonly>
-			</property>
-			<property>
-				<name>On Power Off</name>
-				<type>LIST</type>
-				<items>
-					<item>Do Nothing</item>
-					<item>Home</item>
-					<item>Back</item>
-					<item>Menu</item>
-				</items>
-				<default>Do Nothing</default>
-				<readonly>false</readonly>
-			</property>
-			<property>
-				<name>On Power On</name>
-				<type>LIST</type>
-				<items>
-					<item>Do Nothing</item>
-					<item>Home</item>
-					<item>Back</item>
-					<item>Menu</item>
-				</items>
-				<default>Do Nothing</default>
-				<readonly>false</readonly>
-			</property>
-			<property>
-				<name>MENU Button</name>
-				<type>LIST</type>
-				<items>
-					<item>Do Nothing</item>
-					<item>Home</item>
-					<item>Back</item>
-					<item>Menu</item>
-				</items>
-				<default>Home</default>
-				<readonly>false</readonly>
-			</property>
-			<property>
-				<name>GUIDE Button</name>
-				<type>LIST</type>
-				<items>
-					<item>Do Nothing</item>
-					<item>Home</item>
-					<item>Back</item>
-					<item>Menu</item>
-				</items>
-				<default>Menu</default>
-				<readonly>false</readonly>
-			</property>
-			<property>
-				<name>INFO Button</name>
-				<type>LIST</type>
-				<items>
-					<item>Do Nothing</item>
-					<item>Home</item>
-					<item>Back</item>
-					<item>Menu</item>
-				</items>
-				<default>Menu</default>
-				<readonly>false</readonly>
-			</property>
-			<property>
-				<name>CANCEL Button</name>
-				<type>LIST</type>
-				<items>
-					<item>Do Nothing</item>
-					<item>Home</item>
-					<item>Back</item>
-					<item>Menu</item>
-				</items>
-				<default>Menu</default>
-				<readonly>false</readonly>
-			</property>
-			<property>
-				<name>PVR Button</name>
-				<type>LIST</type>
-				<items>
-					<item>Do Nothing</item>
-					<item>Home</item>
-					<item>Back</item>
-					<item>Menu</item>
-				</items>
-				<default>Back</default>
-				<readonly>false</readonly>
-			</property>
-			<property>
-				<name>STAR Button</name>
-				<type>LIST</type>
-				<items>
-					<item>Do Nothing</item>
-					<item>Home</item>
-					<item>Back</item>
-					<item>Menu</item>
-				</items>
-				<default>Do Nothing</default>
-				<readonly>false</readonly>
-			</property>
-			<property>
-				<name>POUND Button</name>
-				<type>LIST</type>
-				<items>
-					<item>Do Nothing</item>
-					<item>Home</item>
-					<item>Back</item>
-					<item>Menu</item>
-				</items>
-				<default>Do Nothing</default>
-				<readonly>false</readonly>
-			</property>
-		</properties>
-		<commands>
-			<command>
-				<name>Launch App</name>
-				<description>Launch PARAM1 on NAME</description>
-				<params>
-					<param>
-						<name>App</name>
-						<type>CUSTOM_SELECT:AppSelection</type>
-					</param>
-				</params>
-			</command>
-		</commands>
-		<actions>
-			<action>
-				<name>Launch App</name>
-				<command>Launch App</command>
-				<params>
-					<param>
-						<name>App</name>
-						<type>CUSTOM_SELECT:AppSelection</type>
-					</param>
-				</params>
-			</action>
-			<action>
-				<name>Test Connection</name>
-				<command>TestConnection</command>
-			</action>
-			<action>
-				<name>Scan Devices</name>
-				<command>ScanDevices</command>
-			</action>
-		</actions>
-		<documentation file="www/documentation.rtf"/>
-	</config>
-	<capabilities>
-		<hide_in_media>True</hide_in_media>
-		<navigator_display_option proxybindingid="5001">
-			<display_icons>
-				<Icon width="70" height="70">controller://driver/atv-remote/icons/device/experience_70.png</Icon>
-				<Icon width="90" height="90">controller://driver/atv-remote/icons/device/experience_90.png</Icon>
-				<Icon width="300" height="300">controller://driver/atv-remote/icons/device/experience_300.png</Icon>
-				<Icon width="512" height="512">controller://driver/atv-remote/icons/device/experience_512.png</Icon>
-				<Icon width="1024" height="1024">controller://driver/atv-remote/icons/device/experience_1024.png</Icon>
-			</display_icons>
-		</navigator_display_option>
-		<UI xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" proxybindingid="5001">
-			<DeviceIcon>device</DeviceIcon>
-			<BrandingIcon>branding</BrandingIcon>
-			<Icons>
-				<IconGroup id="branding">
-					<Icon width="70" height="70">controller://driver/atv-remote/icons/device/experience_70.png</Icon>
-					<Icon width="90" height="90">controller://driver/atv-remote/icons/device/experience_90.png</Icon>
-					<Icon width="300" height="300">controller://driver/atv-remote/icons/device/experience_300.png</Icon>
-					<Icon width="512" height="512">controller://driver/atv-remote/icons/device/experience_512.png</Icon>
-					<Icon width="1024" height="1024">controller://driver/atv-remote/icons/device/experience_1024.png</Icon>
-				</IconGroup>
-				<IconGroup id="device">
-					<Icon width="70" height="70">controller://driver/atv-remote/icons/device/experience_70.png</Icon>
-					<Icon width="90" height="90">controller://driver/atv-remote/icons/device/experience_90.png</Icon>
-					<Icon width="300" height="300">controller://driver/atv-remote/icons/device/experience_300.png</Icon>
-					<Icon width="512" height="512">controller://driver/atv-remote/icons/device/experience_512.png</Icon>
-					<Icon width="1024" height="1024">controller://driver/atv-remote/icons/device/experience_1024.png</Icon>
-				</IconGroup>
-				<IconGroup id="np_repeat">
-					<Icon width="20" height="20">controller://driver/atv-remote/icons/np_repeat/np_repeat_20.png</Icon>
-					<Icon width="30" height="30">controller://driver/atv-remote/icons/np_repeat/np_repeat_30.png</Icon>
-					<Icon width="40" height="40">controller://driver/atv-remote/icons/np_repeat/np_repeat_40.png</Icon>
-					<Icon width="50" height="50">controller://driver/atv-remote/icons/np_repeat/np_repeat_50.png</Icon>
-					<Icon width="60" height="60">controller://driver/atv-remote/icons/np_repeat/np_repeat_60.png</Icon>
-					<Icon width="70" height="70">controller://driver/atv-remote/icons/np_repeat/np_repeat_70.png</Icon>
-					<Icon width="80" height="80">controller://driver/atv-remote/icons/np_repeat/np_repeat_80.png</Icon>
-					<Icon width="90" height="90">controller://driver/atv-remote/icons/np_repeat/np_repeat_90.png</Icon>
-					<Icon width="100" height="100">controller://driver/atv-remote/icons/np_repeat/np_repeat_100.png</Icon>
-					<Icon width="110" height="110">controller://driver/atv-remote/icons/np_repeat/np_repeat_110.png</Icon>
-					<Icon width="120" height="120">controller://driver/atv-remote/icons/np_repeat/np_repeat_120.png</Icon>
-					<Icon width="130" height="130">controller://driver/atv-remote/icons/np_repeat/np_repeat_130.png</Icon>
-					<Icon width="140" height="140">controller://driver/atv-remote/icons/np_repeat/np_repeat_140.png</Icon>
-				</IconGroup>
-				<IconGroup id="np_repeat_a">
-					<Icon width="20" height="20">controller://driver/atv-remote/icons/np_repeat_a/np_repeat_a_20.png</Icon>
-					<Icon width="30" height="30">controller://driver/atv-remote/icons/np_repeat_a/np_repeat_a_30.png</Icon>
-					<Icon width="40" height="40">controller://driver/atv-remote/icons/np_repeat_a/np_repeat_a_40.png</Icon>
-					<Icon width="50" height="50">controller://driver/atv-remote/icons/np_repeat_a/np_repeat_a_50.png</Icon>
-					<Icon width="60" height="60">controller://driver/atv-remote/icons/np_repeat_a/np_repeat_a_60.png</Icon>
-					<Icon width="70" height="70">controller://driver/atv-remote/icons/np_repeat_a/np_repeat_a_70.png</Icon>
-					<Icon width="80" height="80">controller://driver/atv-remote/icons/np_repeat_a/np_repeat_a_80.png</Icon>
-					<Icon width="90" height="90">controller://driver/atv-remote/icons/np_repeat_a/np_repeat_a_90.png</Icon>
-					<Icon width="100" height="100">controller://driver/atv-remote/icons/np_repeat_a/np_repeat_a_100.png</Icon>
-					<Icon width="110" height="110">controller://driver/atv-remote/icons/np_repeat_a/np_repeat_a_110.png</Icon>
-					<Icon width="120" height="120">controller://driver/atv-remote/icons/np_repeat_a/np_repeat_a_120.png</Icon>
-					<Icon width="130" height="130">controller://driver/atv-remote/icons/np_repeat_a/np_repeat_a_130.png</Icon>
-					<Icon width="140" height="140">controller://driver/atv-remote/icons/np_repeat_a/np_repeat_a_140.png</Icon>
-				</IconGroup>
-				<IconGroup id="np_shuffle">
-					<Icon width="20" height="20">controller://driver/atv-remote/icons/np_shuffle/np_shuffle_20.png</Icon>
-					<Icon width="30" height="30">controller://driver/atv-remote/icons/np_shuffle/np_shuffle_30.png</Icon>
-					<Icon width="40" height="40">controller://driver/atv-remote/icons/np_shuffle/np_shuffle_40.png</Icon>
-					<Icon width="50" height="50">controller://driver/atv-remote/icons/np_shuffle/np_shuffle_50.png</Icon>
-					<Icon width="60" height="60">controller://driver/atv-remote/icons/np_shuffle/np_shuffle_60.png</Icon>
-					<Icon width="70" height="70">controller://driver/atv-remote/icons/np_shuffle/np_shuffle_70.png</Icon>
-					<Icon width="80" height="80">controller://driver/atv-remote/icons/np_shuffle/np_shuffle_80.png</Icon>
-					<Icon width="90" height="90">controller://driver/atv-remote/icons/np_shuffle/np_shuffle_90.png</Icon>
-					<Icon width="100" height="100">controller://driver/atv-remote/icons/np_shuffle/np_shuffle_100.png</Icon>
-					<Icon width="110" height="110">controller://driver/atv-remote/icons/np_shuffle/np_shuffle_110.png</Icon>
-					<Icon width="120" height="120">controller://driver/atv-remote/icons/np_shuffle/np_shuffle_120.png</Icon>
-					<Icon width="130" height="130">controller://driver/atv-remote/icons/np_shuffle/np_shuffle_130.png</Icon>
-					<Icon width="140" height="140">controller://driver/atv-remote/icons/np_shuffle/np_shuffle_140.png</Icon>
-				</IconGroup>
-				<IconGroup id="np_shuffle_a">
-					<Icon width="20" height="20">controller://driver/atv-remote/icons/np_shuffle_a/np_shuffle_a_20.png</Icon>
-					<Icon width="30" height="30">controller://driver/atv-remote/icons/np_shuffle_a/np_shuffle_a_30.png</Icon>
-					<Icon width="40" height="40">controller://driver/atv-remote/icons/np_shuffle_a/np_shuffle_a_40.png</Icon>
-					<Icon width="50" height="50">controller://driver/atv-remote/icons/np_shuffle_a/np_shuffle_a_50.png</Icon>
-					<Icon width="60" height="60">controller://driver/atv-remote/icons/np_shuffle_a/np_shuffle_a_60.png</Icon>
-					<Icon width="70" height="70">controller://driver/atv-remote/icons/np_shuffle_a/np_shuffle_a_70.png</Icon>
-					<Icon width="80" height="80">controller://driver/atv-remote/icons/np_shuffle_a/np_shuffle_a_80.png</Icon>
-					<Icon width="90" height="90">controller://driver/atv-remote/icons/np_shuffle_a/np_shuffle_a_90.png</Icon>
-					<Icon width="100" height="100">controller://driver/atv-remote/icons/np_shuffle_a/np_shuffle_a_100.png</Icon>
-					<Icon width="110" height="110">controller://driver/atv-remote/icons/np_shuffle_a/np_shuffle_a_110.png</Icon>
-					<Icon width="120" height="120">controller://driver/atv-remote/icons/np_shuffle_a/np_shuffle_a_120.png</Icon>
-					<Icon width="130" height="130">controller://driver/atv-remote/icons/np_shuffle_a/np_shuffle_a_130.png</Icon>
-					<Icon width="140" height="140">controller://driver/atv-remote/icons/np_shuffle_a/np_shuffle_a_140.png</Icon>
-				</IconGroup>
-			</Icons>
-			<Tabs>
-				<Command>
-					<Name>TabsCommand</Name>
-					<Type>PROTOCOL</Type>
-				</Command>
-			</Tabs>
-			<NowPlaying>
-				<ActionIds>Shuffle Repeat</ActionIds>
-				<!--Id values for Action items that will always be shown on the Now Playing screen -->
-				<List>
-					<!--Each XXXProperty value defines an XML tag that can appear inside each item element of the List-->
-					<ItemDefaultActionProperty>default_action</ItemDefaultActionProperty>
-					<!--id value for the default action (if present, that action will be triggered without a popup on selecting this item)-->
-					<ItemActionIdsProperty>actions_list</ItemActionIdsProperty>
-					<!-- single space separated ordered list of actions (if present and no DefaultAction, each action defined will be added to the popup list of actions)-->
-					<TitleProperty>title</TitleProperty>
-					<!-- main text for this item-->
-					<SubTitleProperty>subtitle</SubTitleProperty>
-					<!-- if present, sub-text for this item -->
-					<ImageProperty>image_list</ImageProperty>
-					<!-- multiple tags allowed -->
-					<!-- URL to image for this item.  Should have attributes of width and height as cues for Navigator -->
-					<LengthProperty>duration</LengthProperty>
-					<!-- text to indicate length/duration/number of tracks etc; appears on right of item -->
-					<IsHeader>
-						<!-- if the Property value exists and and ValidValues are matched marks this item as a header item -->
-						<Property>isHeader</Property>
-						<ValidValues>
-							<Value>true</Value>
-						</ValidValues>
-					</IsHeader>
-				</List>
-			</NowPlaying>
-			<Actions>
-				<Action>
-					<Id>Shuffle</Id>
-					<!-- value to include in ActionIds or the content of ItemDefaultActionProperty, etc to include this action-->
-					<Name>Turn Shuffle On</Name>
-					<!-- Name displayed for this action on Navigator-->
-					<IconId>np_shuffle</IconId>
-					<!-- IconGroup id value to use for this action if an icon is required-->
-					<Command>
-						<Name>ToggleShuffle</Name>
-						<!-- Command that will be sent to ReceivedFromProxy for the proxy associated with this UI element-->
-						<Type>PROTOCOL</Type>
-					</Command>
-					<Filters>
-						<!-- Filters allow you to change the behavior of an Action (Change) or stop it from showing (Disable)-->
-						<Filter>
-							<Type>Disable</Type>
-							<Property>can_shuffle</Property>
-							<!-- For actions on an item, if this property is present in that item. For actions on Now Playing screen, if this property is present in the NowPlaying element of the QueueChanged event notification-->
-							<ValidValues>
-								<!-- if the property contains any value defined here-->
-								<Value>false</Value>
-							</ValidValues>
-						</Filter>
-						<Filter>
-							<Type>Change</Type>
-							<!-- For Change filters, the Command sent will still be the same but a new icon and name can be provided (most useful for toggle type actions)-->
-							<Property>shufflemode</Property>
-							<Name>Turn Shuffle Off</Name>
-							<IconId>np_shuffle_a</IconId>
-							<ValidValues>
-								<Value>true</Value>
-							</ValidValues>
-						</Filter>
-					</Filters>
-				</Action>
-				<Action>
-					<Id>Repeat</Id>
-					<Name>Turn Repeat On</Name>
-					<IconId>np_repeat</IconId>
-					<Command>
-						<Name>ToggleRepeat</Name>
-						<Type>PROTOCOL</Type>
-					</Command>
-					<Filters>
-						<Filter>
-							<Type>Disable</Type>
-							<Property>can_repeat</Property>
-							<ValidValues>
-								<Value>false</Value>
-							</ValidValues>
-						</Filter>
-						<Filter>
-							<Type>Change</Type>
-							<Property>repeatmode</Property>
-							<Name>Turn Repeat Off</Name>
-							<IconId>np_repeat_a</IconId>
-							<ValidValues>
-								<Value>true</Value>
-							</ValidValues>
-						</Filter>
-					</Filters>
-				</Action>
-			</Actions>
-			<Dashboard>
-				<!-- These are the five available elements that can be displayed on a Navigator transport bar -->
-				<!-- Unless this driver targets Control4 Digital Audio, the Type of these should always be PROTOCOL -->
-				<!-- The ReleaseCommand Name values are in upper case to keep style with other proxy transport commands -->
-				<Transport>
-					<Id>Play</Id>
-					<ButtonType>PLAY</ButtonType>
-					<ReleaseCommand>
-						<Name>PLAY</Name>
-						<Type>PROTOCOL</Type>
-					</ReleaseCommand>
-				</Transport>
-				<Transport>
-					<Id>Pause</Id>
-					<ButtonType>PAUSE</ButtonType>
-					<ReleaseCommand>
-						<Name>PAUSE</Name>
-						<Type>PROTOCOL</Type>
-					</ReleaseCommand>
-				</Transport>
-				<Transport>
-					<Id>Stop</Id>
-					<ButtonType>STOP</ButtonType>
-					<ReleaseCommand>
-						<Name>STOP</Name>
-						<Type>PROTOCOL</Type>
-					</ReleaseCommand>
-				</Transport>
-				<Transport>
-					<Id>SkipRev</Id>
-					<ButtonType>SKIP_REV</ButtonType>
-					<ReleaseCommand>
-						<Name>SKIP_REV</Name>
-						<Type>PROTOCOL</Type>
-					</ReleaseCommand>
-				</Transport>
-				<Transport>
-					<Id>SkipFwd</Id>
-					<ButtonType>SKIP_FWD</ButtonType>
-					<ReleaseCommand>
-						<Name>SKIP_FWD</Name>
-						<Type>PROTOCOL</Type>
-					</ReleaseCommand>
-				</Transport>
-			</Dashboard>
-			<Actions>
-				<Action>
-					<Id>NowPlaying</Id>
-					<Name>Now Playing</Name>
-					<Command>
-						<Name>NowPlayingCommand</Name>
-						<Type>PROTOCOL</Type>
-					</Command>
-				</Action>
-			</Actions>
-		</UI>
-		<video_provider_count>1</video_provider_count>
-		<digital_audio_support>False</digital_audio_support>
-		<ui_selects_device>True</ui_selects_device>
-		<list_nowplaying_non_c4>True</list_nowplaying_non_c4>
-	</capabilities>
-	<proxies qty="3">
-		<proxy proxybindingid="5001" name="Apple TV" primary="True" image_source="c4z" large_image="icons/device_lg.png" small_image="icons/device_sm.png">media_service</proxy>
-		<proxy proxybindingid="5002" name="Apple TV App Switcher" image_source="c4z" large_image="icons/apps_lg.png" small_image="icons/apps_sm.png">avswitch</proxy>
-	</proxies>
-	<connections>
-		<connection>
-			<id>5001</id>
-			<type>2</type>
-			<connectionname>Apple TV Proxy</connectionname>
-			<consumer>false</consumer>
-			<linelevel>false</linelevel>
-			<classes>
-				<class>
-					<classname>MediaService</classname>
-				</class>
-			</classes>
-		</connection>
-		<connection>
-			<id>5002</id>
-			<type>2</type>
-			<connectionname>AVSWITCH</connectionname>
-			<consumer>false</consumer>
-			<linelevel>true</linelevel>
-			<classes>
-				<class>
-					<classname>AVSWITCH</classname>
-				</class>
-			</classes>
-		</connection>
-		<connection proxybindingid="5001">
-			<id>1001</id>
-			<type>5</type>
-			<connectionname>Video in from Apple TV OSD</connectionname>
-			<consumer>True</consumer>
-			<linelevel>True</linelevel>
-			<idautobind>1</idautobind>
-			<hidden>True</hidden>
-			<classes>
-				<class>
-					<classname>HDMI</classname>
-					<autobind>true</autobind>
-				</class>
-			</classes>
-		</connection>
-		<connection proxybindingid="5001">
-			<id>1101</id>
-			<type>5</type>
-			<connectionname>Video in from Apple TV App Switch</connectionname>
-			<consumer>True</consumer>
-			<linelevel>True</linelevel>
-			<idautobind>10</idautobind>
-			<hidden>True</hidden>
-			<classes>
-				<class>
-					<classname>HDMI</classname>
-					<autobind>true</autobind>
-				</class>
-			</classes>
-		</connection>
-		<connection proxybindingid="5001">
-			<id>2001</id>
-			<type>5</type>
-			<connectionname>AV Out</connectionname>
-			<consumer>False</consumer>
-			<linelevel>True</linelevel>
-			<classes>
-				<class>
-					<classname>HDMI</classname>
-				</class>
-			</classes>
-		</connection>
-		<connection proxybindingid="5001">
-			<id>3001</id>
-			<type>6</type>
-			<connectionname>Audio In from Apple TV OSD</connectionname>
-			<consumer>True</consumer>
-			<linelevel>True</linelevel>
-			<idautobind>2</idautobind>
-			<hidden>True</hidden>
-			<classes>
-				<class>
-					<classname>STEREO</classname>
-					<autobind>true</autobind>
-				</class>
-				<class>
-					<classname>DIGITAL_COAX</classname>
-					<autobind>true</autobind>
-				</class>
-				<class>
-					<classname>DIGITAL_OPTICAL</classname>
-					<autobind>true</autobind>
-				</class>
-			</classes>
-		</connection>
-		<connection proxybindingid="5001">
-			<id>3101</id>
-			<type>6</type>
-			<connectionname>Audio In from Apple TV App Switch</connectionname>
-			<consumer>True</consumer>
-			<linelevel>True</linelevel>
-			<idautobind>20</idautobind>
-			<hidden>True</hidden>
-			<classes>
-				<class>
-					<classname>STEREO</classname>
-					<autobind>true</autobind>
-				</class>
-				<class>
-					<classname>DIGITAL_COAX</classname>
-					<autobind>true</autobind>
-				</class>
-				<class>
-					<classname>DIGITAL_OPTICAL</classname>
-					<autobind>true</autobind>
-				</class>
-			</classes>
-		</connection>
-		<connection proxybindingid="5001">
-			<id>4001</id>
-			<type>6</type>
-			<connectionname>AV Out</connectionname>
-			<consumer>False</consumer>
-			<linelevel>True</linelevel>
-			<classes>
-				<class>
-					<classname>STEREO</classname>
-				</class>
-				<class>
-					<classname>DIGITAL_COAX</classname>
-				</class>
-				<class>
-					<classname>DIGITAL_OPTICAL</classname>
-				</class>
-			</classes>
-		</connection>
-		<connection proxybindingid="5002">
-			<id>2110</id>
-			<type>5</type>
-			<connectionname>Apple TV App Switch Video Out</connectionname>
-			<consumer>False</consumer>
-			<linelevel>True</linelevel>
-			<idautobind>10</idautobind>
-			<hidden>True</hidden>
-			<classes>
-				<class>
-					<classname>COMPONENT</classname>
-					<autobind>true</autobind>
-				</class>
-				<class>
-					<classname>HDMI</classname>
-					<autobind>true</autobind>
-				</class>
-			</classes>
-		</connection>
-		<connection proxybindingid="5002">
-			<id>4110</id>
-			<type>6</type>
-			<connectionname>Apple TV App Switch Audio Out</connectionname>
-			<consumer>False</consumer>
-			<linelevel>True</linelevel>
-			<idautobind>20</idautobind>
-			<hidden>True</hidden>
-			<classes>
-				<class>
-					<classname>STEREO</classname>
-					<autobind>true</autobind>
-				</class>
-				<class>
-					<classname>DIGITAL_COAX</classname>
-					<autobind>true</autobind>
-				</class>
-				<class>
-					<classname>DIGITAL_OPTICAL</classname>
-					<autobind>true</autobind>
-				</class>
-			</classes>
-		</connection>
-		<connection proxybindingid="5002">
-			<id>3101</id>
-			<type>5</type>
-			<connectionname>App 1</connectionname>
-			<consumer>True</consumer>
-			<linelevel>False</linelevel>
-			<idautobind>33101</idautobind>
-			<classes>
-				<class>
-					<classname>RF_MINI_APP</classname>
-					<autobind>True</autobind>
-				</class>
-			</classes>
-		</connection>
-		<connection proxybindingid="5002">
-			<id>3102</id>
-			<type>5</type>
-			<connectionname>App 2</connectionname>
-			<consumer>True</consumer>
-			<linelevel>False</linelevel>
-			<idautobind>33101</idautobind>
-			<classes>
-				<class>
-					<classname>RF_MINI_APP</classname>
-					<autobind>True</autobind>
-				</class>
-			</classes>
-		</connection>
-		<connection proxybindingid="5002">
-			<id>3103</id>
-			<type>5</type>
-			<connectionname>App 3</connectionname>
-			<consumer>True</consumer>
-			<linelevel>False</linelevel>
-			<idautobind>33101</idautobind>
-			<classes>
-				<class>
-					<classname>RF_MINI_APP</classname>
-					<autobind>True</autobind>
-				</class>
-			</classes>
-		</connection>
-		<connection proxybindingid="5002">
-			<id>3104</id>
-			<type>5</type>
-			<connectionname>App 4</connectionname>
-			<consumer>True</consumer>
-			<linelevel>False</linelevel>
-			<idautobind>33101</idautobind>
-			<classes>
-				<class>
-					<classname>RF_MINI_APP</classname>
-					<autobind>True</autobind>
-				</class>
-			</classes>
-		</connection>
-		<connection proxybindingid="5002">
-			<id>3105</id>
-			<type>5</type>
-			<connectionname>App 5</connectionname>
-			<consumer>True</consumer>
-			<linelevel>False</linelevel>
-			<idautobind>33101</idautobind>
-			<classes>
-				<class>
-					<classname>RF_MINI_APP</classname>
-					<autobind>True</autobind>
-				</class>
-			</classes>
-		</connection>
-		<connection proxybindingid="5002">
-			<id>3106</id>
-			<type>5</type>
-			<connectionname>App 6</connectionname>
-			<consumer>True</consumer>
-			<linelevel>False</linelevel>
-			<idautobind>33101</idautobind>
-			<classes>
-				<class>
-					<classname>RF_MINI_APP</classname>
-					<autobind>True</autobind>
-				</class>
-			</classes>
-		</connection>
-		<connection proxybindingid="5002">
-			<id>3107</id>
-			<type>5</type>
-			<connectionname>App 7</connectionname>
-			<consumer>True</consumer>
-			<linelevel>False</linelevel>
-			<idautobind>33101</idautobind>
-			<classes>
-				<class>
-					<classname>RF_MINI_APP</classname>
-					<autobind>True</autobind>
-				</class>
-			</classes>
-		</connection>
-		<connection proxybindingid="5002">
-			<id>3108</id>
-			<type>5</type>
-			<connectionname>App 8</connectionname>
-			<consumer>True</consumer>
-			<linelevel>False</linelevel>
-			<idautobind>33101</idautobind>
-			<classes>
-				<class>
-					<classname>RF_MINI_APP</classname>
-					<autobind>True</autobind>
-				</class>
-			</classes>
-		</connection>
-		<connection proxybindingid="5002">
-			<id>3109</id>
-			<type>5</type>
-			<connectionname>App 9</connectionname>
-			<consumer>True</consumer>
-			<linelevel>False</linelevel>
-			<idautobind>33101</idautobind>
-			<classes>
-				<class>
-					<classname>RF_MINI_APP</classname>
-					<autobind>True</autobind>
-				</class>
-			</classes>
-		</connection>
-		<connection proxybindingid="5002">
-			<id>3110</id>
-			<type>5</type>
-			<connectionname>App 10</connectionname>
-			<consumer>True</consumer>
-			<linelevel>False</linelevel>
-			<idautobind>33101</idautobind>
-			<classes>
-				<class>
-					<classname>RF_MINI_APP</classname>
-					<autobind>True</autobind>
-				</class>
-			</classes>
-		</connection>
-		<connection proxybindingid="5002">
-			<id>3111</id>
-			<type>5</type>
-			<connectionname>App 11</connectionname>
-			<consumer>True</consumer>
-			<linelevel>False</linelevel>
-			<idautobind>33101</idautobind>
-			<classes>
-				<class>
-					<classname>RF_MINI_APP</classname>
-					<autobind>True</autobind>
-				</class>
-			</classes>
-		</connection>
-		<connection proxybindingid="5002">
-			<id>3112</id>
-			<type>5</type>
-			<connectionname>App 12</connectionname>
-			<consumer>True</consumer>
-			<linelevel>False</linelevel>
-			<idautobind>33101</idautobind>
-			<classes>
-				<class>
-					<classname>RF_MINI_APP</classname>
-					<autobind>True</autobind>
-				</class>
-			</classes>
-		</connection>
-		<connection proxybindingid="5002">
-			<id>3113</id>
-			<type>5</type>
-			<connectionname>App 13</connectionname>
-			<consumer>True</consumer>
-			<linelevel>False</linelevel>
-			<idautobind>33101</idautobind>
-			<classes>
-				<class>
-					<classname>RF_MINI_APP</classname>
-					<autobind>True</autobind>
-				</class>
-			</classes>
-		</connection>
-		<connection proxybindingid="5002">
-			<id>3114</id>
-			<type>5</type>
-			<connectionname>App 14</connectionname>
-			<consumer>True</consumer>
-			<linelevel>False</linelevel>
-			<idautobind>33101</idautobind>
-			<classes>
-				<class>
-					<classname>RF_MINI_APP</classname>
-					<autobind>True</autobind>
-				</class>
-			</classes>
-		</connection>
-		<connection proxybindingid="5002">
-			<id>3115</id>
-			<type>5</type>
-			<connectionname>App 15</connectionname>
-			<consumer>True</consumer>
-			<linelevel>False</linelevel>
-			<idautobind>33101</idautobind>
-			<classes>
-				<class>
-					<classname>RF_MINI_APP</classname>
-					<autobind>True</autobind>
-				</class>
-			</classes>
-		</connection>
-		<connection proxybindingid="5002">
-			<id>3116</id>
-			<type>5</type>
-			<connectionname>App 16</connectionname>
-			<consumer>True</consumer>
-			<linelevel>False</linelevel>
-			<idautobind>33101</idautobind>
-			<classes>
-				<class>
-					<classname>RF_MINI_APP</classname>
-					<autobind>True</autobind>
-				</class>
-			</classes>
-		</connection>
-		<connection proxybindingid="5002">
-			<id>3117</id>
-			<type>5</type>
-			<connectionname>App 17</connectionname>
-			<consumer>True</consumer>
-			<linelevel>False</linelevel>
-			<idautobind>33101</idautobind>
-			<classes>
-				<class>
-					<classname>RF_MINI_APP</classname>
-					<autobind>True</autobind>
-				</class>
-			</classes>
-		</connection>
-		<connection proxybindingid="5002">
-			<id>3118</id>
-			<type>5</type>
-			<connectionname>App 18</connectionname>
-			<consumer>True</consumer>
-			<linelevel>False</linelevel>
-			<idautobind>33101</idautobind>
-			<classes>
-				<class>
-					<classname>RF_MINI_APP</classname>
-					<autobind>True</autobind>
-				</class>
-			</classes>
-		</connection>
-		<connection proxybindingid="5002">
-			<id>3119</id>
-			<type>5</type>
-			<connectionname>App 19</connectionname>
-			<consumer>True</consumer>
-			<linelevel>False</linelevel>
-			<idautobind>33101</idautobind>
-			<classes>
-				<class>
-					<classname>RF_MINI_APP</classname>
-					<autobind>True</autobind>
-				</class>
-			</classes>
-		</connection>
-		<connection proxybindingid="5002">
-			<id>3120</id>
-			<type>5</type>
-			<connectionname>App 20</connectionname>
-			<consumer>True</consumer>
-			<linelevel>False</linelevel>
-			<idautobind>33101</idautobind>
-			<classes>
-				<class>
-					<classname>RF_MINI_APP</classname>
-					<autobind>True</autobind>
-				</class>
-			</classes>
-		</connection>
-		<connection proxybindingid="5002">
-			<id>3121</id>
-			<type>5</type>
-			<connectionname>App 21</connectionname>
-			<consumer>True</consumer>
-			<linelevel>False</linelevel>
-			<idautobind>33101</idautobind>
-			<classes>
-				<class>
-					<classname>RF_MINI_APP</classname>
-					<autobind>True</autobind>
-				</class>
-			</classes>
-		</connection>
-		<connection proxybindingid="5002">
-			<id>3122</id>
-			<type>5</type>
-			<connectionname>App 22</connectionname>
-			<consumer>True</consumer>
-			<linelevel>False</linelevel>
-			<idautobind>33101</idautobind>
-			<classes>
-				<class>
-					<classname>RF_MINI_APP</classname>
-					<autobind>True</autobind>
-				</class>
-			</classes>
-		</connection>
-		<connection proxybindingid="5002">
-			<id>3123</id>
-			<type>5</type>
-			<connectionname>App 23</connectionname>
-			<consumer>True</consumer>
-			<linelevel>False</linelevel>
-			<idautobind>33101</idautobind>
-			<classes>
-				<class>
-					<classname>RF_MINI_APP</classname>
-					<autobind>True</autobind>
-				</class>
-			</classes>
-		</connection>
-		<connection proxybindingid="5002">
-			<id>3124</id>
-			<type>5</type>
-			<connectionname>App 24</connectionname>
-			<consumer>True</consumer>
-			<linelevel>False</linelevel>
-			<idautobind>33101</idautobind>
-			<classes>
-				<class>
-					<classname>RF_MINI_APP</classname>
-					<autobind>True</autobind>
-				</class>
-			</classes>
-		</connection>
-		<connection proxybindingid="5002">
-			<id>3125</id>
-			<type>5</type>
-			<connectionname>App 25</connectionname>
-			<consumer>True</consumer>
-			<linelevel>False</linelevel>
-			<idautobind>33101</idautobind>
-			<classes>
-				<class>
-					<classname>RF_MINI_APP</classname>
-					<autobind>True</autobind>
-				</class>
-			</classes>
-		</connection>
-	</connections>
+  <copyright>Copyright 2021 Control4. All rights reserved.</copyright>
+  <creator>Original by Alex Martin (Mod by Welton Cartel)</creator>
+  <manufacturer>Apple</manufacturer>
+  <name>Apple TV Control</name>
+  <model>TV</model>
+  <created>09/15/2021 12:00 AM</created>
+  <modified>09/30/2021 12:00 AM</modified>
+  <version>33</version>
+  <control>lua_gen</control>
+  <driver>DriverWorks</driver>
+  <small image_source="c4z">icons/device_sm.png</small>
+  <large image_source="c4z">icons/device_lg.png</large>
+  <composer_categories>
+    <category>Audio/Video</category>
+  </composer_categories>
+  <config>
+    <script file="driver.lua" />
+    <properties>
+      <property>
+        <name>Debug Mode</name>
+        <type>LIST</type>
+        <items>
+          <item>Off</item>
+          <item>On</item>
+        </items>
+        <default>Off</default>
+        <readonly>false</readonly>
+      </property>
+      <property>
+        <name>Server IP</name>
+        <type>STRING</type>
+        <default />
+        <readonly>false</readonly>
+      </property>
+      <property>
+        <name>Server Port</name>
+        <type>STRING</type>
+        <default>8080</default>
+        <readonly>false</readonly>
+      </property>
+      <property>
+        <name>Device Selector</name>
+        <type>DYNAMIC_LIST</type>
+      </property>
+      <property>
+        <name>Protocol to Pair</name>
+        <type>DYNAMIC_LIST</type>
+      </property>
+      <property>
+        <name>Pairing Code</name>
+        <type>STRING</type>
+        <default />
+      </property>
+      <property>
+        <name>Device ID</name>
+        <type>STRING</type>
+        <default />
+        <readonly>true</readonly>
+      </property>
+      <property>
+        <name>AirPlay Credentials</name>
+        <type>STRING</type>
+        <default />
+        <readonly>true</readonly>
+      </property>
+      <property>
+        <name>Companion Credentials</name>
+        <type>STRING</type>
+        <default />
+        <readonly>true</readonly>
+      </property>
+      <property>
+        <name>Passthrough Mode</name>
+        <type>LIST</type>
+        <items>
+          <item>Off</item>
+          <item>On</item>
+        </items>
+        <default>Off</default>
+        <readonly>false</readonly>
+      </property>
+      <property>
+        <name>On Power Off</name>
+        <type>LIST</type>
+        <items>
+          <item>Do Nothing</item>
+          <item>Home</item>
+          <item>Back</item>
+          <item>Menu</item>
+        </items>
+        <default>Do Nothing</default>
+        <readonly>false</readonly>
+      </property>
+      <property>
+        <name>On Power On</name>
+        <type>LIST</type>
+        <items>
+          <item>Do Nothing</item>
+          <item>Home</item>
+          <item>Back</item>
+          <item>Menu</item>
+        </items>
+        <default>Do Nothing</default>
+        <readonly>false</readonly>
+      </property>
+      <property>
+        <name>MENU Button</name>
+        <type>LIST</type>
+        <items>
+          <item>Do Nothing</item>
+          <item>Home</item>
+          <item>Back</item>
+          <item>Menu</item>
+        </items>
+        <default>Home</default>
+        <readonly>false</readonly>
+      </property>
+      <property>
+        <name>GUIDE Button</name>
+        <type>LIST</type>
+        <items>
+          <item>Do Nothing</item>
+          <item>Home</item>
+          <item>Back</item>
+          <item>Menu</item>
+        </items>
+        <default>Menu</default>
+        <readonly>false</readonly>
+      </property>
+      <property>
+        <name>INFO Button</name>
+        <type>LIST</type>
+        <items>
+          <item>Do Nothing</item>
+          <item>Home</item>
+          <item>Back</item>
+          <item>Menu</item>
+        </items>
+        <default>Menu</default>
+        <readonly>false</readonly>
+      </property>
+      <property>
+        <name>CANCEL Button</name>
+        <type>LIST</type>
+        <items>
+          <item>Do Nothing</item>
+          <item>Home</item>
+          <item>Back</item>
+          <item>Menu</item>
+        </items>
+        <default>Menu</default>
+        <readonly>false</readonly>
+      </property>
+      <property>
+        <name>PVR Button</name>
+        <type>LIST</type>
+        <items>
+          <item>Do Nothing</item>
+          <item>Home</item>
+          <item>Back</item>
+          <item>Menu</item>
+        </items>
+        <default>Back</default>
+        <readonly>false</readonly>
+      </property>
+      <property>
+        <name>STAR Button</name>
+        <type>LIST</type>
+        <items>
+          <item>Do Nothing</item>
+          <item>Home</item>
+          <item>Back</item>
+          <item>Menu</item>
+        </items>
+        <default>Do Nothing</default>
+        <readonly>false</readonly>
+      </property>
+      <property>
+        <name>POUND Button</name>
+        <type>LIST</type>
+        <items>
+          <item>Do Nothing</item>
+          <item>Home</item>
+          <item>Back</item>
+          <item>Menu</item>
+        </items>
+        <default>Do Nothing</default>
+        <readonly>false</readonly>
+      </property>
+    </properties>
+    <commands>
+      <command>
+        <name>Launch App</name>
+        <description>Launch PARAM1 on NAME</description>
+        <params>
+          <param>
+            <name>App</name>
+            <type>CUSTOM_SELECT:AppSelection</type>
+          </param>
+        </params>
+      </command>
+    </commands>
+    <actions>
+      <action>
+        <name>Launch App</name>
+        <command>Launch App</command>
+        <params>
+          <param>
+            <name>App</name>
+            <type>CUSTOM_SELECT:AppSelection</type>
+          </param>
+        </params>
+      </action>
+      <action>
+        <name>Test Connection</name>
+        <command>TestConnection</command>
+      </action>
+      <action>
+        <name>Scan Devices</name>
+        <command>ScanDevices</command>
+      </action>
+    </actions>
+    <documentation file="www/documentation.rtf" />
+  </config>
+  <capabilities>
+    <hide_in_media>True</hide_in_media>
+    <navigator_display_option proxybindingid="5001">
+      <display_icons>
+        <Icon width="70" height="70">controller://driver/atv-remote/icons/device/experience_70.png</Icon>
+        <Icon width="90" height="90">controller://driver/atv-remote/icons/device/experience_90.png</Icon>
+        <Icon width="300" height="300">controller://driver/atv-remote/icons/device/experience_300.png</Icon>
+        <Icon width="512" height="512">controller://driver/atv-remote/icons/device/experience_512.png</Icon>
+        <Icon width="1024" height="1024">controller://driver/atv-remote/icons/device/experience_1024.png</Icon>
+      </display_icons>
+    </navigator_display_option>
+    <UI xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" proxybindingid="5001">
+      <DeviceIcon>device</DeviceIcon>
+      <BrandingIcon>branding</BrandingIcon>
+      <Icons>
+        <IconGroup id="branding">
+          <Icon width="70" height="70">controller://driver/atv-remote/icons/device/experience_70.png</Icon>
+          <Icon width="90" height="90">controller://driver/atv-remote/icons/device/experience_90.png</Icon>
+          <Icon width="300" height="300">controller://driver/atv-remote/icons/device/experience_300.png</Icon>
+          <Icon width="512" height="512">controller://driver/atv-remote/icons/device/experience_512.png</Icon>
+          <Icon width="1024" height="1024">controller://driver/atv-remote/icons/device/experience_1024.png</Icon>
+        </IconGroup>
+        <IconGroup id="device">
+          <Icon width="70" height="70">controller://driver/atv-remote/icons/device/experience_70.png</Icon>
+          <Icon width="90" height="90">controller://driver/atv-remote/icons/device/experience_90.png</Icon>
+          <Icon width="300" height="300">controller://driver/atv-remote/icons/device/experience_300.png</Icon>
+          <Icon width="512" height="512">controller://driver/atv-remote/icons/device/experience_512.png</Icon>
+          <Icon width="1024" height="1024">controller://driver/atv-remote/icons/device/experience_1024.png</Icon>
+        </IconGroup>
+        <IconGroup id="np_repeat">
+          <Icon width="20" height="20">controller://driver/atv-remote/icons/np_repeat/np_repeat_20.png</Icon>
+          <Icon width="30" height="30">controller://driver/atv-remote/icons/np_repeat/np_repeat_30.png</Icon>
+          <Icon width="40" height="40">controller://driver/atv-remote/icons/np_repeat/np_repeat_40.png</Icon>
+          <Icon width="50" height="50">controller://driver/atv-remote/icons/np_repeat/np_repeat_50.png</Icon>
+          <Icon width="60" height="60">controller://driver/atv-remote/icons/np_repeat/np_repeat_60.png</Icon>
+          <Icon width="70" height="70">controller://driver/atv-remote/icons/np_repeat/np_repeat_70.png</Icon>
+          <Icon width="80" height="80">controller://driver/atv-remote/icons/np_repeat/np_repeat_80.png</Icon>
+          <Icon width="90" height="90">controller://driver/atv-remote/icons/np_repeat/np_repeat_90.png</Icon>
+          <Icon width="100" height="100">controller://driver/atv-remote/icons/np_repeat/np_repeat_100.png</Icon>
+          <Icon width="110" height="110">controller://driver/atv-remote/icons/np_repeat/np_repeat_110.png</Icon>
+          <Icon width="120" height="120">controller://driver/atv-remote/icons/np_repeat/np_repeat_120.png</Icon>
+          <Icon width="130" height="130">controller://driver/atv-remote/icons/np_repeat/np_repeat_130.png</Icon>
+          <Icon width="140" height="140">controller://driver/atv-remote/icons/np_repeat/np_repeat_140.png</Icon>
+        </IconGroup>
+        <IconGroup id="np_repeat_a">
+          <Icon width="20" height="20">controller://driver/atv-remote/icons/np_repeat_a/np_repeat_a_20.png</Icon>
+          <Icon width="30" height="30">controller://driver/atv-remote/icons/np_repeat_a/np_repeat_a_30.png</Icon>
+          <Icon width="40" height="40">controller://driver/atv-remote/icons/np_repeat_a/np_repeat_a_40.png</Icon>
+          <Icon width="50" height="50">controller://driver/atv-remote/icons/np_repeat_a/np_repeat_a_50.png</Icon>
+          <Icon width="60" height="60">controller://driver/atv-remote/icons/np_repeat_a/np_repeat_a_60.png</Icon>
+          <Icon width="70" height="70">controller://driver/atv-remote/icons/np_repeat_a/np_repeat_a_70.png</Icon>
+          <Icon width="80" height="80">controller://driver/atv-remote/icons/np_repeat_a/np_repeat_a_80.png</Icon>
+          <Icon width="90" height="90">controller://driver/atv-remote/icons/np_repeat_a/np_repeat_a_90.png</Icon>
+          <Icon width="100" height="100">controller://driver/atv-remote/icons/np_repeat_a/np_repeat_a_100.png</Icon>
+          <Icon width="110" height="110">controller://driver/atv-remote/icons/np_repeat_a/np_repeat_a_110.png</Icon>
+          <Icon width="120" height="120">controller://driver/atv-remote/icons/np_repeat_a/np_repeat_a_120.png</Icon>
+          <Icon width="130" height="130">controller://driver/atv-remote/icons/np_repeat_a/np_repeat_a_130.png</Icon>
+          <Icon width="140" height="140">controller://driver/atv-remote/icons/np_repeat_a/np_repeat_a_140.png</Icon>
+        </IconGroup>
+        <IconGroup id="np_shuffle">
+          <Icon width="20" height="20">controller://driver/atv-remote/icons/np_shuffle/np_shuffle_20.png</Icon>
+          <Icon width="30" height="30">controller://driver/atv-remote/icons/np_shuffle/np_shuffle_30.png</Icon>
+          <Icon width="40" height="40">controller://driver/atv-remote/icons/np_shuffle/np_shuffle_40.png</Icon>
+          <Icon width="50" height="50">controller://driver/atv-remote/icons/np_shuffle/np_shuffle_50.png</Icon>
+          <Icon width="60" height="60">controller://driver/atv-remote/icons/np_shuffle/np_shuffle_60.png</Icon>
+          <Icon width="70" height="70">controller://driver/atv-remote/icons/np_shuffle/np_shuffle_70.png</Icon>
+          <Icon width="80" height="80">controller://driver/atv-remote/icons/np_shuffle/np_shuffle_80.png</Icon>
+          <Icon width="90" height="90">controller://driver/atv-remote/icons/np_shuffle/np_shuffle_90.png</Icon>
+          <Icon width="100" height="100">controller://driver/atv-remote/icons/np_shuffle/np_shuffle_100.png</Icon>
+          <Icon width="110" height="110">controller://driver/atv-remote/icons/np_shuffle/np_shuffle_110.png</Icon>
+          <Icon width="120" height="120">controller://driver/atv-remote/icons/np_shuffle/np_shuffle_120.png</Icon>
+          <Icon width="130" height="130">controller://driver/atv-remote/icons/np_shuffle/np_shuffle_130.png</Icon>
+          <Icon width="140" height="140">controller://driver/atv-remote/icons/np_shuffle/np_shuffle_140.png</Icon>
+        </IconGroup>
+        <IconGroup id="np_shuffle_a">
+          <Icon width="20" height="20">controller://driver/atv-remote/icons/np_shuffle_a/np_shuffle_a_20.png</Icon>
+          <Icon width="30" height="30">controller://driver/atv-remote/icons/np_shuffle_a/np_shuffle_a_30.png</Icon>
+          <Icon width="40" height="40">controller://driver/atv-remote/icons/np_shuffle_a/np_shuffle_a_40.png</Icon>
+          <Icon width="50" height="50">controller://driver/atv-remote/icons/np_shuffle_a/np_shuffle_a_50.png</Icon>
+          <Icon width="60" height="60">controller://driver/atv-remote/icons/np_shuffle_a/np_shuffle_a_60.png</Icon>
+          <Icon width="70" height="70">controller://driver/atv-remote/icons/np_shuffle_a/np_shuffle_a_70.png</Icon>
+          <Icon width="80" height="80">controller://driver/atv-remote/icons/np_shuffle_a/np_shuffle_a_80.png</Icon>
+          <Icon width="90" height="90">controller://driver/atv-remote/icons/np_shuffle_a/np_shuffle_a_90.png</Icon>
+          <Icon width="100" height="100">controller://driver/atv-remote/icons/np_shuffle_a/np_shuffle_a_100.png</Icon>
+          <Icon width="110" height="110">controller://driver/atv-remote/icons/np_shuffle_a/np_shuffle_a_110.png</Icon>
+          <Icon width="120" height="120">controller://driver/atv-remote/icons/np_shuffle_a/np_shuffle_a_120.png</Icon>
+          <Icon width="130" height="130">controller://driver/atv-remote/icons/np_shuffle_a/np_shuffle_a_130.png</Icon>
+          <Icon width="140" height="140">controller://driver/atv-remote/icons/np_shuffle_a/np_shuffle_a_140.png</Icon>
+        </IconGroup>
+      </Icons>
+      <Tabs>
+        <Command>
+          <Name>TabsCommand</Name>
+          <Type>PROTOCOL</Type>
+        </Command>
+      </Tabs>
+      <NowPlaying>
+        <ActionIds>Shuffle Repeat</ActionIds>
+        <!--Id values for Action items that will always be shown on the Now Playing screen -->
+        <List>
+          <!--Each XXXProperty value defines an XML tag that can appear inside each item element of the List-->
+          <ItemDefaultActionProperty>default_action</ItemDefaultActionProperty>
+          <!--id value for the default action (if present, that action will be triggered without a popup on selecting this item)-->
+          <ItemActionIdsProperty>actions_list</ItemActionIdsProperty>
+          <!-- single space separated ordered list of actions (if present and no DefaultAction, each action defined will be added to the popup list of actions)-->
+          <TitleProperty>title</TitleProperty>
+          <!-- main text for this item-->
+          <SubTitleProperty>subtitle</SubTitleProperty>
+          <!-- if present, sub-text for this item -->
+          <ImageProperty>image_list</ImageProperty>
+          <!-- multiple tags allowed -->
+          <!-- URL to image for this item.  Should have attributes of width and height as cues for Navigator -->
+          <LengthProperty>duration</LengthProperty>
+          <!-- text to indicate length/duration/number of tracks etc; appears on right of item -->
+          <IsHeader>
+            <!-- if the Property value exists and and ValidValues are matched marks this item as a header item -->
+            <Property>isHeader</Property>
+            <ValidValues>
+              <Value>true</Value>
+            </ValidValues>
+          </IsHeader>
+        </List>
+      </NowPlaying>
+      <Actions>
+        <Action>
+          <Id>Shuffle</Id>
+          <!-- value to include in ActionIds or the content of ItemDefaultActionProperty, etc to include this action-->
+          <Name>Turn Shuffle On</Name>
+          <!-- Name displayed for this action on Navigator-->
+          <IconId>np_shuffle</IconId>
+          <!-- IconGroup id value to use for this action if an icon is required-->
+          <Command>
+            <Name>ToggleShuffle</Name>
+            <!-- Command that will be sent to ReceivedFromProxy for the proxy associated with this UI element-->
+            <Type>PROTOCOL</Type>
+          </Command>
+          <Filters>
+            <!-- Filters allow you to change the behavior of an Action (Change) or stop it from showing (Disable)-->
+            <Filter>
+              <Type>Disable</Type>
+              <Property>can_shuffle</Property>
+              <!-- For actions on an item, if this property is present in that item. For actions on Now Playing screen, if this property is present in the NowPlaying element of the QueueChanged event notification-->
+              <ValidValues>
+                <!-- if the property contains any value defined here-->
+                <Value>false</Value>
+              </ValidValues>
+            </Filter>
+            <Filter>
+              <Type>Change</Type>
+              <!-- For Change filters, the Command sent will still be the same but a new icon and name can be provided (most useful for toggle type actions)-->
+              <Property>shufflemode</Property>
+              <Name>Turn Shuffle Off</Name>
+              <IconId>np_shuffle_a</IconId>
+              <ValidValues>
+                <Value>true</Value>
+              </ValidValues>
+            </Filter>
+          </Filters>
+        </Action>
+        <Action>
+          <Id>Repeat</Id>
+          <Name>Turn Repeat On</Name>
+          <IconId>np_repeat</IconId>
+          <Command>
+            <Name>ToggleRepeat</Name>
+            <Type>PROTOCOL</Type>
+          </Command>
+          <Filters>
+            <Filter>
+              <Type>Disable</Type>
+              <Property>can_repeat</Property>
+              <ValidValues>
+                <Value>false</Value>
+              </ValidValues>
+            </Filter>
+            <Filter>
+              <Type>Change</Type>
+              <Property>repeatmode</Property>
+              <Name>Turn Repeat Off</Name>
+              <IconId>np_repeat_a</IconId>
+              <ValidValues>
+                <Value>true</Value>
+              </ValidValues>
+            </Filter>
+          </Filters>
+        </Action>
+      </Actions>
+      <Dashboard>
+        <!-- These are the five available elements that can be displayed on a Navigator transport bar -->
+        <!-- Unless this driver targets Control4 Digital Audio, the Type of these should always be PROTOCOL -->
+        <!-- The ReleaseCommand Name values are in upper case to keep style with other proxy transport commands -->
+        <Transport>
+          <Id>Play</Id>
+          <ButtonType>PLAY</ButtonType>
+          <ReleaseCommand>
+            <Name>PLAY</Name>
+            <Type>PROTOCOL</Type>
+          </ReleaseCommand>
+        </Transport>
+        <Transport>
+          <Id>Pause</Id>
+          <ButtonType>PAUSE</ButtonType>
+          <ReleaseCommand>
+            <Name>PAUSE</Name>
+            <Type>PROTOCOL</Type>
+          </ReleaseCommand>
+        </Transport>
+        <Transport>
+          <Id>Stop</Id>
+          <ButtonType>STOP</ButtonType>
+          <ReleaseCommand>
+            <Name>STOP</Name>
+            <Type>PROTOCOL</Type>
+          </ReleaseCommand>
+        </Transport>
+        <Transport>
+          <Id>SkipRev</Id>
+          <ButtonType>SKIP_REV</ButtonType>
+          <ReleaseCommand>
+            <Name>SKIP_REV</Name>
+            <Type>PROTOCOL</Type>
+          </ReleaseCommand>
+        </Transport>
+        <Transport>
+          <Id>SkipFwd</Id>
+          <ButtonType>SKIP_FWD</ButtonType>
+          <ReleaseCommand>
+            <Name>SKIP_FWD</Name>
+            <Type>PROTOCOL</Type>
+          </ReleaseCommand>
+        </Transport>
+      </Dashboard>
+      <Actions>
+        <Action>
+          <Id>NowPlaying</Id>
+          <Name>Now Playing</Name>
+          <Command>
+            <Name>NowPlayingCommand</Name>
+            <Type>PROTOCOL</Type>
+          </Command>
+        </Action>
+      </Actions>
+    </UI>
+    <video_provider_count>1</video_provider_count>
+    <digital_audio_support>False</digital_audio_support>
+    <ui_selects_device>True</ui_selects_device>
+    <list_nowplaying_non_c4>True</list_nowplaying_non_c4>
+  </capabilities>
+  <proxies qty="3">
+    <proxy proxybindingid="5001" name="Apple TV" primary="True" image_source="c4z" large_image="icons/device_lg.png" small_image="icons/device_sm.png">media_service</proxy>
+    <proxy proxybindingid="5002" name="Apple TV App Switcher" image_source="c4z" large_image="icons/apps_lg.png" small_image="icons/apps_sm.png">avswitch</proxy>
+  </proxies>
+  <connections>
+    <connection>
+      <id>5001</id>
+      <type>2</type>
+      <connectionname>Apple TV Proxy</connectionname>
+      <consumer>false</consumer>
+      <linelevel>false</linelevel>
+      <classes>
+        <class>
+          <classname>MediaService</classname>
+        </class>
+      </classes>
+    </connection>
+    <connection>
+      <id>5002</id>
+      <type>2</type>
+      <connectionname>AVSWITCH</connectionname>
+      <consumer>false</consumer>
+      <linelevel>true</linelevel>
+      <classes>
+        <class>
+          <classname>AVSWITCH</classname>
+        </class>
+      </classes>
+    </connection>
+    <connection proxybindingid="5001">
+      <id>1001</id>
+      <type>5</type>
+      <connectionname>Video in from Apple TV OSD</connectionname>
+      <consumer>True</consumer>
+      <linelevel>True</linelevel>
+      <idautobind>1</idautobind>
+      <hidden>True</hidden>
+      <classes>
+        <class>
+          <classname>HDMI</classname>
+          <autobind>true</autobind>
+        </class>
+      </classes>
+    </connection>
+    <connection proxybindingid="5001">
+      <id>1101</id>
+      <type>5</type>
+      <connectionname>Video in from Apple TV App Switch</connectionname>
+      <consumer>True</consumer>
+      <linelevel>True</linelevel>
+      <idautobind>10</idautobind>
+      <hidden>True</hidden>
+      <classes>
+        <class>
+          <classname>HDMI</classname>
+          <autobind>true</autobind>
+        </class>
+      </classes>
+    </connection>
+    <connection proxybindingid="5001">
+      <id>2001</id>
+      <type>5</type>
+      <connectionname>AV Out</connectionname>
+      <consumer>False</consumer>
+      <linelevel>True</linelevel>
+      <classes>
+        <class>
+          <classname>HDMI</classname>
+        </class>
+      </classes>
+    </connection>
+    <connection proxybindingid="5001">
+      <id>3001</id>
+      <type>6</type>
+      <connectionname>Audio In from Apple TV OSD</connectionname>
+      <consumer>True</consumer>
+      <linelevel>True</linelevel>
+      <idautobind>2</idautobind>
+      <hidden>True</hidden>
+      <classes>
+        <class>
+          <classname>STEREO</classname>
+          <autobind>true</autobind>
+        </class>
+        <class>
+          <classname>DIGITAL_COAX</classname>
+          <autobind>true</autobind>
+        </class>
+        <class>
+          <classname>DIGITAL_OPTICAL</classname>
+          <autobind>true</autobind>
+        </class>
+      </classes>
+    </connection>
+    <connection proxybindingid="5001">
+      <id>3101</id>
+      <type>6</type>
+      <connectionname>Audio In from Apple TV App Switch</connectionname>
+      <consumer>True</consumer>
+      <linelevel>True</linelevel>
+      <idautobind>20</idautobind>
+      <hidden>True</hidden>
+      <classes>
+        <class>
+          <classname>STEREO</classname>
+          <autobind>true</autobind>
+        </class>
+        <class>
+          <classname>DIGITAL_COAX</classname>
+          <autobind>true</autobind>
+        </class>
+        <class>
+          <classname>DIGITAL_OPTICAL</classname>
+          <autobind>true</autobind>
+        </class>
+      </classes>
+    </connection>
+    <connection proxybindingid="5001">
+      <id>4001</id>
+      <type>6</type>
+      <connectionname>AV Out</connectionname>
+      <consumer>False</consumer>
+      <linelevel>True</linelevel>
+      <classes>
+        <class>
+          <classname>STEREO</classname>
+        </class>
+        <class>
+          <classname>DIGITAL_COAX</classname>
+        </class>
+        <class>
+          <classname>DIGITAL_OPTICAL</classname>
+        </class>
+      </classes>
+    </connection>
+    <connection proxybindingid="5002">
+      <id>2110</id>
+      <type>5</type>
+      <connectionname>Apple TV App Switch Video Out</connectionname>
+      <consumer>False</consumer>
+      <linelevel>True</linelevel>
+      <idautobind>10</idautobind>
+      <hidden>True</hidden>
+      <classes>
+        <class>
+          <classname>COMPONENT</classname>
+          <autobind>true</autobind>
+        </class>
+        <class>
+          <classname>HDMI</classname>
+          <autobind>true</autobind>
+        </class>
+      </classes>
+    </connection>
+    <connection proxybindingid="5002">
+      <id>4110</id>
+      <type>6</type>
+      <connectionname>Apple TV App Switch Audio Out</connectionname>
+      <consumer>False</consumer>
+      <linelevel>True</linelevel>
+      <idautobind>20</idautobind>
+      <hidden>True</hidden>
+      <classes>
+        <class>
+          <classname>STEREO</classname>
+          <autobind>true</autobind>
+        </class>
+        <class>
+          <classname>DIGITAL_COAX</classname>
+          <autobind>true</autobind>
+        </class>
+        <class>
+          <classname>DIGITAL_OPTICAL</classname>
+          <autobind>true</autobind>
+        </class>
+      </classes>
+    </connection>
+    <connection proxybindingid="5002">
+      <id>3101</id>
+      <type>5</type>
+      <connectionname>App 1</connectionname>
+      <consumer>True</consumer>
+      <linelevel>False</linelevel>
+      <idautobind>33101</idautobind>
+      <classes>
+        <class>
+          <classname>RF_MINI_APP</classname>
+          <autobind>True</autobind>
+        </class>
+      </classes>
+    </connection>
+    <connection proxybindingid="5002">
+      <id>3102</id>
+      <type>5</type>
+      <connectionname>App 2</connectionname>
+      <consumer>True</consumer>
+      <linelevel>False</linelevel>
+      <idautobind>33101</idautobind>
+      <classes>
+        <class>
+          <classname>RF_MINI_APP</classname>
+          <autobind>True</autobind>
+        </class>
+      </classes>
+    </connection>
+    <connection proxybindingid="5002">
+      <id>3103</id>
+      <type>5</type>
+      <connectionname>App 3</connectionname>
+      <consumer>True</consumer>
+      <linelevel>False</linelevel>
+      <idautobind>33101</idautobind>
+      <classes>
+        <class>
+          <classname>RF_MINI_APP</classname>
+          <autobind>True</autobind>
+        </class>
+      </classes>
+    </connection>
+    <connection proxybindingid="5002">
+      <id>3104</id>
+      <type>5</type>
+      <connectionname>App 4</connectionname>
+      <consumer>True</consumer>
+      <linelevel>False</linelevel>
+      <idautobind>33101</idautobind>
+      <classes>
+        <class>
+          <classname>RF_MINI_APP</classname>
+          <autobind>True</autobind>
+        </class>
+      </classes>
+    </connection>
+    <connection proxybindingid="5002">
+      <id>3105</id>
+      <type>5</type>
+      <connectionname>App 5</connectionname>
+      <consumer>True</consumer>
+      <linelevel>False</linelevel>
+      <idautobind>33101</idautobind>
+      <classes>
+        <class>
+          <classname>RF_MINI_APP</classname>
+          <autobind>True</autobind>
+        </class>
+      </classes>
+    </connection>
+    <connection proxybindingid="5002">
+      <id>3106</id>
+      <type>5</type>
+      <connectionname>App 6</connectionname>
+      <consumer>True</consumer>
+      <linelevel>False</linelevel>
+      <idautobind>33101</idautobind>
+      <classes>
+        <class>
+          <classname>RF_MINI_APP</classname>
+          <autobind>True</autobind>
+        </class>
+      </classes>
+    </connection>
+    <connection proxybindingid="5002">
+      <id>3107</id>
+      <type>5</type>
+      <connectionname>App 7</connectionname>
+      <consumer>True</consumer>
+      <linelevel>False</linelevel>
+      <idautobind>33101</idautobind>
+      <classes>
+        <class>
+          <classname>RF_MINI_APP</classname>
+          <autobind>True</autobind>
+        </class>
+      </classes>
+    </connection>
+    <connection proxybindingid="5002">
+      <id>3108</id>
+      <type>5</type>
+      <connectionname>App 8</connectionname>
+      <consumer>True</consumer>
+      <linelevel>False</linelevel>
+      <idautobind>33101</idautobind>
+      <classes>
+        <class>
+          <classname>RF_MINI_APP</classname>
+          <autobind>True</autobind>
+        </class>
+      </classes>
+    </connection>
+    <connection proxybindingid="5002">
+      <id>3109</id>
+      <type>5</type>
+      <connectionname>App 9</connectionname>
+      <consumer>True</consumer>
+      <linelevel>False</linelevel>
+      <idautobind>33101</idautobind>
+      <classes>
+        <class>
+          <classname>RF_MINI_APP</classname>
+          <autobind>True</autobind>
+        </class>
+      </classes>
+    </connection>
+    <connection proxybindingid="5002">
+      <id>3110</id>
+      <type>5</type>
+      <connectionname>App 10</connectionname>
+      <consumer>True</consumer>
+      <linelevel>False</linelevel>
+      <idautobind>33101</idautobind>
+      <classes>
+        <class>
+          <classname>RF_MINI_APP</classname>
+          <autobind>True</autobind>
+        </class>
+      </classes>
+    </connection>
+    <connection proxybindingid="5002">
+      <id>3111</id>
+      <type>5</type>
+      <connectionname>App 11</connectionname>
+      <consumer>True</consumer>
+      <linelevel>False</linelevel>
+      <idautobind>33101</idautobind>
+      <classes>
+        <class>
+          <classname>RF_MINI_APP</classname>
+          <autobind>True</autobind>
+        </class>
+      </classes>
+    </connection>
+    <connection proxybindingid="5002">
+      <id>3112</id>
+      <type>5</type>
+      <connectionname>App 12</connectionname>
+      <consumer>True</consumer>
+      <linelevel>False</linelevel>
+      <idautobind>33101</idautobind>
+      <classes>
+        <class>
+          <classname>RF_MINI_APP</classname>
+          <autobind>True</autobind>
+        </class>
+      </classes>
+    </connection>
+    <connection proxybindingid="5002">
+      <id>3113</id>
+      <type>5</type>
+      <connectionname>App 13</connectionname>
+      <consumer>True</consumer>
+      <linelevel>False</linelevel>
+      <idautobind>33101</idautobind>
+      <classes>
+        <class>
+          <classname>RF_MINI_APP</classname>
+          <autobind>True</autobind>
+        </class>
+      </classes>
+    </connection>
+    <connection proxybindingid="5002">
+      <id>3114</id>
+      <type>5</type>
+      <connectionname>App 14</connectionname>
+      <consumer>True</consumer>
+      <linelevel>False</linelevel>
+      <idautobind>33101</idautobind>
+      <classes>
+        <class>
+          <classname>RF_MINI_APP</classname>
+          <autobind>True</autobind>
+        </class>
+      </classes>
+    </connection>
+    <connection proxybindingid="5002">
+      <id>3115</id>
+      <type>5</type>
+      <connectionname>App 15</connectionname>
+      <consumer>True</consumer>
+      <linelevel>False</linelevel>
+      <idautobind>33101</idautobind>
+      <classes>
+        <class>
+          <classname>RF_MINI_APP</classname>
+          <autobind>True</autobind>
+        </class>
+      </classes>
+    </connection>
+    <connection proxybindingid="5002">
+      <id>3116</id>
+      <type>5</type>
+      <connectionname>App 16</connectionname>
+      <consumer>True</consumer>
+      <linelevel>False</linelevel>
+      <idautobind>33101</idautobind>
+      <classes>
+        <class>
+          <classname>RF_MINI_APP</classname>
+          <autobind>True</autobind>
+        </class>
+      </classes>
+    </connection>
+    <connection proxybindingid="5002">
+      <id>3117</id>
+      <type>5</type>
+      <connectionname>App 17</connectionname>
+      <consumer>True</consumer>
+      <linelevel>False</linelevel>
+      <idautobind>33101</idautobind>
+      <classes>
+        <class>
+          <classname>RF_MINI_APP</classname>
+          <autobind>True</autobind>
+        </class>
+      </classes>
+    </connection>
+    <connection proxybindingid="5002">
+      <id>3118</id>
+      <type>5</type>
+      <connectionname>App 18</connectionname>
+      <consumer>True</consumer>
+      <linelevel>False</linelevel>
+      <idautobind>33101</idautobind>
+      <classes>
+        <class>
+          <classname>RF_MINI_APP</classname>
+          <autobind>True</autobind>
+        </class>
+      </classes>
+    </connection>
+    <connection proxybindingid="5002">
+      <id>3119</id>
+      <type>5</type>
+      <connectionname>App 19</connectionname>
+      <consumer>True</consumer>
+      <linelevel>False</linelevel>
+      <idautobind>33101</idautobind>
+      <classes>
+        <class>
+          <classname>RF_MINI_APP</classname>
+          <autobind>True</autobind>
+        </class>
+      </classes>
+    </connection>
+    <connection proxybindingid="5002">
+      <id>3120</id>
+      <type>5</type>
+      <connectionname>App 20</connectionname>
+      <consumer>True</consumer>
+      <linelevel>False</linelevel>
+      <idautobind>33101</idautobind>
+      <classes>
+        <class>
+          <classname>RF_MINI_APP</classname>
+          <autobind>True</autobind>
+        </class>
+      </classes>
+    </connection>
+    <connection proxybindingid="5002">
+      <id>3121</id>
+      <type>5</type>
+      <connectionname>App 21</connectionname>
+      <consumer>True</consumer>
+      <linelevel>False</linelevel>
+      <idautobind>33101</idautobind>
+      <classes>
+        <class>
+          <classname>RF_MINI_APP</classname>
+          <autobind>True</autobind>
+        </class>
+      </classes>
+    </connection>
+    <connection proxybindingid="5002">
+      <id>3122</id>
+      <type>5</type>
+      <connectionname>App 22</connectionname>
+      <consumer>True</consumer>
+      <linelevel>False</linelevel>
+      <idautobind>33101</idautobind>
+      <classes>
+        <class>
+          <classname>RF_MINI_APP</classname>
+          <autobind>True</autobind>
+        </class>
+      </classes>
+    </connection>
+    <connection proxybindingid="5002">
+      <id>3123</id>
+      <type>5</type>
+      <connectionname>App 23</connectionname>
+      <consumer>True</consumer>
+      <linelevel>False</linelevel>
+      <idautobind>33101</idautobind>
+      <classes>
+        <class>
+          <classname>RF_MINI_APP</classname>
+          <autobind>True</autobind>
+        </class>
+      </classes>
+    </connection>
+    <connection proxybindingid="5002">
+      <id>3124</id>
+      <type>5</type>
+      <connectionname>App 24</connectionname>
+      <consumer>True</consumer>
+      <linelevel>False</linelevel>
+      <idautobind>33101</idautobind>
+      <classes>
+        <class>
+          <classname>RF_MINI_APP</classname>
+          <autobind>True</autobind>
+        </class>
+      </classes>
+    </connection>
+    <connection proxybindingid="5002">
+      <id>3125</id>
+      <type>5</type>
+      <connectionname>App 25</connectionname>
+      <consumer>True</consumer>
+      <linelevel>False</linelevel>
+      <idautobind>33101</idautobind>
+      <classes>
+        <class>
+          <classname>RF_MINI_APP</classname>
+          <autobind>True</autobind>
+        </class>
+      </classes>
+    </connection>
+  </connections>
 </devicedata>
