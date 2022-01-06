@@ -361,7 +361,7 @@ function PYATV.pollMediaInfo (source, navId, roomId, seq) --pollMediaInfo
 					dbg ("Arrays not equal, updating")
 					if (init=="old") then
 					   dbg ("init: "..init)
-					   dbg ("device array: "..device_array["title"].." array: "..array["title"])
+					   --dbg ("device array: "..device_array["title"].." array: "..array["title"])
 				     else
 					   dbg ("init: "..init)
 				     end
