@@ -1,19 +1,52 @@
 ﻿# Apple TV IP Remote Control (pyatv)
 
+## Features
+- Virtually no latency for remote commands
+- Show Now Playing within Touch Panels or C4 app
+- Show current app playing content
+- Programming variables for content type and play state (good for lighting scenes!)
+  - Play States:
+    - playing
+    - paused
+    - loading
+    - idle
+  - Media Types:
+    - music
+    - video
+    - unknown
+- Typical remote control functions over IP
+  - Buttons can be customized in Composer
+- Universal MiniApp support
+  - Launch apps on Apple TV programmatically or via MiniApps
+  - Not all apps are natively supported and may need manually added (in driver.lua file)
+    - Current apps:
+      - Amazon Prime Video
+      - Apple TV+
+      - Disney+
+      - Hulu
+      - Netflix
+      - YouTube
+## Known Issues
+- SR260 Remotes display an hourglass icon when choosing from Watch menu
+  - Workaround: Press a different experience button (such as List) and back out
+- iOS app will select previously selected media device (Watch or Listen) rather than the Apple TV itself
+  - Workaround: Launch via MiniApps, otherwise no solution; all other devices work as expected
 ## Preparing the Linux Environment
 ·	Ensure Python3 is installed with pip
 
 ·	Install pyatv
 
-    pip3 install pyatv
+·   `pip3 install pyatv`
 
 ·	Verify installation
 
-    atvremote --version
+·	`atvremote --version`
 
-·	Run the Webserver
+·	Copy the pyatv-webserver.py to your Linux environment.
 
-    python3 pyatv-webserver.py
+·	Run the Webserver Python script in a screen or background process of your choice:
+
+·	`python3 pyatv-webserver.py`
 
 ·	Server is now running on port 8080
 ## Pairing Apple TV
@@ -25,15 +58,14 @@
 
 ·	Select the desired device, the Protocols and Device ID property will populate
 
-·	Select AirPlay for remote commands, Companion to launch apps
+·	Select Companion or AirPlay (you will need to pair with both protocols)
 
 ·	After setting the protocol, the device will display a PIN on screen
 
-·	Enter the PIN in Composer
+·	Enter the PIN in Composer (perform the pairing again with the other Protocol)
 
 ·	Run the Test Connection action to verify everything works
 
 ·	The Lua console will display the result
 ## Notes
-·	I threw in some MiniApps to experiment with Universal Drivers via Programming
-
+·	Universal Mini App Drivers can be used as normal, you need to have the App on the Apple TV
