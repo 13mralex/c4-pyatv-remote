@@ -1181,7 +1181,7 @@ function MakeImageList (iconInfo)
 	    if (iconInfo["url"]) and w and h then
 		    --print("START Make image list...URL: "..iconInfo["url"])
 		    --for _, size in ipairs(defaultSizes) do
-			    imageUrl = iconInfo["url"]
+			    imageUrl = iconInfo["url"].."?"..C4:Base64Encode(os.date ('%x %X : '))
 			    width = w
 			    height = h
 			    table.insert (image_list, '<image_list width="'..width..'" height="'..height..'">'..imageUrl..'</image_list>')
@@ -1333,7 +1333,7 @@ function UpdateQueue (data, navId, roomId, seq)
 	if (data["title"]) then
 		queue = {
 			{title = 'Now Playing', isHeader = true},
-			{title = data["title"], subtitle = data["artist"], duration = duration, ImageUrl = data["app_icon"]},
+			{title = data["title"], subtitle = data["artist"], duration = duration, ImageUrl = artwork_info["url"]},
 			{title = 'Service', isHeader = true},
 			{title = data["app"], ImageUrl = data["app_icon"]},
 		}
@@ -1378,18 +1378,15 @@ function UpdateQueue (data, navId, roomId, seq)
 			 end
 		end
 		
-	     --item.image_list = MakeImageList(artwork_info)
-	     --table.insert(list, XMLTag("item", item))
-		
-		--item.image_list = MakeImageList(icon)
-	     --table.insert(list, XMLTag("item", item))
 
 		list = table.concat(list)
+		
 		queueInfo = {
 			List = list, -- The entire list that will be displayed for the queue
 			NowPlayingIndex = 1, -- The item (0-indexed) that will be marked as current in the queue (blue marker on the Android navigators)
 			NowPlaying = XMLTag(tags) -- The tags that will be applied to all ActionIds from the NowPlaying section of the XML to determine what actions are shown
 		}
+
      else
 		dbg ("queue is nil")
 	end
