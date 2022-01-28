@@ -2,7 +2,7 @@
 
 ## Features
 - Virtually no latency for remote commands
-- Show Now Playing within Touch Panels or C4 app
+- Show Now Playing within Touch Panels, EA Navigators or C4 app
 - Show current app playing content
 - Programming variables for content type and play state (good for lighting scenes!)
   - Play States:
