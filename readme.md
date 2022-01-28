@@ -18,16 +18,10 @@
   - Buttons can be customized in Composer
 - Universal MiniApp support
   - Launch apps on Apple TV programmatically or via MiniApps
-  - Not all apps are natively supported and may need manually added (in driver.lua file)
-    - Current apps:
-      - Amazon Prime Video
-      - Apple TV+
-      - Disney+
-      - Hulu
-      - Netflix
-      - YouTube
+  - Major streaming services are supported natively
+    - Custom MiniApps can be added in the driver.lua file
 ## Known Issues
-- SR260 Remotes display an hourglass icon when choosing from Watch menu
+- SR260 Remotes may display an hourglass icon when choosing from Watch menu
   - Workaround: Press a different experience button (such as List) and back out
 - iOS app will select previously selected media device (Watch or Listen) rather than the Apple TV itself
   - Workaround: Launch via MiniApps, otherwise no solution; all other devices work as expected
@@ -67,5 +61,5 @@
 ·	Run the Test Connection action to verify everything works
 
 ·	The Lua console will display the result
-## Notes
-·	Universal Mini App Drivers can be used as normal, you need to have the App on the Apple TV
+## ToDos
+· Create press and hold actions
