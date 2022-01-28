@@ -1253,11 +1253,11 @@ function UpdateDashboard (data, isForced)
     
     if (dump(dashboardInfo) ~= dump(oldDashboardInfo)) then
 	   SendEvent(5001, nil, nil, "DashboardChanged", dashboardInfo)
-	   print("DBs not equal, updating")
+	   dbg("DBs not equal, updating")
 	   --print("New DB: "..dump(dashboardInfo))
 	   --print("Old DB: "..dump(oldDashboardInfo))
     else
-	   print("DBs equal, not updating")
+	   dbg("DBs equal, not updating")
 	   --print("New DB: "..dump(dashboardInfo))
 	   --print("Old DB: "..dump(oldDashboardInfo))
     end
