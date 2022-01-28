@@ -17,6 +17,7 @@ do	--Globals
 	device_id = {}
 	current_pairing_device = {}
 	init = "fresh"
+	oldDashboardInfo = {}
 
 	MSP_PROXY = 5001
 	PASSTHROUGH_PROXY = 5001		-- set this to the proxy ID that should handle all passthrough commands from minidrivers
@@ -328,14 +329,14 @@ function PYATV.pollMediaInfo (source, navId, roomId, seq) --pollMediaInfo
 				--if (array["title"]) then
 				--	array["hash"] = C4:Base64Encode(array["title"])
 				--end
-				if (array["device_state"] ~= "Idle") then
+				if (array["device_state"] ~= "idle") then
 					imageURL = "http://"..Properties["Server IP"]..":"..Properties["Server Port"].."/art/"..Properties["Device ID"].."/art.png"
 					array["ImageUrl"] = imageURL
 					if (array["hash"] ~= nil) then
 						array["image"] = C4:Base64Encode(imageURL.."?"..C4:Base64Encode(array["hash"]))
 					end
-				else
-					array["image"] = nil
+				--else
+				--	array["image"] = C4:Base64Encode("controller://driver/atv-remote/icons/default_cover_art.png")
 				end
 				if (array["app_id"]) then
 				    --dbg ("---ID & Name Match: "..array["app"])
@@ -352,10 +353,10 @@ function PYATV.pollMediaInfo (source, navId, roomId, seq) --pollMediaInfo
 					dbg ("Media request from proxy")
 					UpdateMediaInfo(array)
 					UpdateQueue(array)
-					UpdateDashboard(array)
+					UpdateDashboard(array,true)
 					UpdateProgress(array)
 				end
-				if (device_array["title"] == array["title"]) then
+				if (device_array["hash"] == array["hash"]) then
 					dbg ("Arrays equal, not updating")
 				else
 					dbg ("Arrays not equal, updating")
@@ -367,14 +368,14 @@ function PYATV.pollMediaInfo (source, navId, roomId, seq) --pollMediaInfo
 				     end
 					UpdateMediaInfo(array)
 					UpdateQueue(array)
-					UpdateDashboard(array)
+					UpdateDashboard(array,false)
 				end
 				if (device_array["position"] == array["position"]) then
 					dbg ("Progress equal, not updating")
 				else
 					dbg ("Progress not equal, updating")
 					UpdateProgress(array)
-					UpdateDashboard(array)
+					UpdateDashboard(array,false)
 				end
 				device_array = array
 				if (array["device_state"]) and (array["media_type"]) then
@@ -409,6 +410,10 @@ function PYATV.preMakeImageList(array) -- ORIGINAL: preMakeImageList
 					artwork_info["width"] = e
 					artwork_info["height"] = f
 					artwork_info["url"] = art_url
+				--else
+				--     artwork_info["width"] = 512
+				--	artwork_info["height"] = 512
+				--	artwork_info["url"] = "controller://driver/atv-remote/icons/default_cover_art.png"
 				end
 			else
 				print("C4:urlGet() failed: "..strError)
@@ -1197,8 +1202,9 @@ function MakeImageList (iconInfo)
     
 end
 
-function UpdateDashboard (data, navId, roomId, seq)
+function UpdateDashboard (data, isForced)
     -- These are all 5 of the Id values of the Transport items from the Dashboard section of the XML
+    
     local dashboardInfo = {}
     local possibleItems = {
         "Play",
@@ -1207,7 +1213,10 @@ function UpdateDashboard (data, navId, roomId, seq)
         "SkipFwd",
         "SkipRev"
     }
-    position = data["position"]
+    position = data["position"] or 0
+    if (position == "none") then
+	   position = 0
+    end
     total_time = data["total_time"] or "none"
     live = false
     if (total_time) then
@@ -1241,18 +1250,35 @@ function UpdateDashboard (data, navId, roomId, seq)
     end
     playstate = data["device_state"]
     --DataReceived(5001, navId, seq, dashboardInfo)
-    SendEvent(5001, nil, nil, "DashboardChanged", dashboardInfo)
+    
+    if (dump(dashboardInfo) ~= dump(oldDashboardInfo)) then
+	   SendEvent(5001, nil, nil, "DashboardChanged", dashboardInfo)
+	   print("DBs not equal, updating")
+	   --print("New DB: "..dump(dashboardInfo))
+	   --print("Old DB: "..dump(oldDashboardInfo))
+    else
+	   print("DBs equal, not updating")
+	   --print("New DB: "..dump(dashboardInfo))
+	   --print("Old DB: "..dump(oldDashboardInfo))
+    end
+    
+    if (isForced) then
+	   SendEvent(5001, nil, nil, "DashboardChanged", dashboardInfo)
+    end
+    
+    oldDashboardInfo = dashboardInfo
 end
 
 function UpdateMediaInfo (data, navId, roomId, seq)
     -- Updates the Now Playing area of the media bar and also the main section on the left of the Now Playing screen.  Doesn't affect the Queue side at all.
     local args = {
-        TITLE = data["title"] or '',
+        TITLE = data["title"] or 'Apple TV',
         ALBUM = data["album"] or '',
         ARTIST = data["artist"] or '',
         GENRE = data["genre"] or '',
-        IMAGEURL = data["image"] or ''
+        IMAGEURL = data["image"] --or C4:Base64Encode('controller://driver/atv-remote/icons/default_cover_art.png')
     }
+    
     for k,v in pairs(args) do
 	   if (v == "none") then
 		  args[k] = nil
@@ -1270,7 +1296,10 @@ end
 
 function UpdateProgress (data, navId, roomId, seq)
     label = "Not playing"
-    position = data["position"]
+    position = data["position"] or 0
+    if (position == "none") then
+	   position = 0
+    end
     total_time = data["total_time"] or "none"
     live = false
     if (total_time) then
@@ -1307,9 +1336,13 @@ function UpdateQueue (data, navId, roomId, seq)
 		return
 	end
     --prog = data["position"]
+    local queue = {{title=nil}}
     duration = 0
-    position = data["position"]
-    total_time = data["total_time"] or "none"
+    position = data["position"] or 0
+    if (position == "none") then
+	   position = 0
+    end
+    total_time = data["total_time"] or 0
     live = false
     if (total_time) then
         if total_time ~= "none" then
@@ -1338,11 +1371,7 @@ function UpdateQueue (data, navId, roomId, seq)
 			{title = data["app"], ImageUrl = data["app_icon"]},
 		}
      else
-	   dbg ("data is nil")
-	   queue = {
-			{title = 'Service', isHeader = true},
-			{title = data["app"], ImageUrl = data["app_icon"]},
-		}
+	   dbg ("data is nil, queue: "..dump(queue))
 	end
 	--print("APP ICON URL: "..data["app_icon"])
 	--print("SONG ICON URL: "..data["ImageUrl"])
@@ -1353,7 +1382,8 @@ function UpdateQueue (data, navId, roomId, seq)
         repeatmode = (REPEAT == true)
     }
     local list = {}
-	if (queue) then
+    if (queue[1]["title"] ~= nil) then
+	     --dbg("Queue not empty, = "..dump(queue))
 	     icon = {}
 	     icon["url"] = data["app_icon"]
 		icon["width"] = 512
@@ -1367,6 +1397,8 @@ function UpdateQueue (data, navId, roomId, seq)
 				--print("make image list for Now Playing")
 				item.image_list = MakeImageList(artwork_info)
 				table.insert(list, XMLTag("item", item))
+			 else
+				dbg("Queue titles not equal... "..item["title"].." ~= "..data["title"])
 			 end
 			 if (item["title"] == 'Service') then
 				table.insert(list, XMLTag("item", item))
@@ -1387,9 +1419,26 @@ function UpdateQueue (data, navId, roomId, seq)
 			NowPlaying = XMLTag(tags) -- The tags that will be applied to all ActionIds from the NowPlaying section of the XML to determine what actions are shown
 		}
 
-     else
+    else
 		dbg ("queue is nil")
-	end
+		
+		queue = {
+			{title = "Not Playing"}
+		}
+		
+		for _, item in ipairs(queue) do
+		  table.insert(list, XMLTag("item", item))
+	     end
+		
+		list = table.concat(list)
+		
+		queueInfo = {
+			List = list, -- The entire list that will be displayed for the queue
+			NowPlayingIndex = 1, -- The item (0-indexed) that will be marked as current in the queue (blue marker on the Android navigators)
+			NowPlaying = XMLTag(tags) -- The tags that will be applied to all ActionIds from the NowPlaying section of the XML to determine what actions are shown
+		}
+		
+    end
     --DataReceived(5001, navId, seq, queueInfo)
 	if (queueInfo) then
 		SendEvent(5001, nil, nil, "QueueChanged", queueInfo)

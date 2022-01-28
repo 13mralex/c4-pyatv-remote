@@ -5,8 +5,8 @@
   <name>Apple TV Control</name>
   <model>TV</model>
   <created>09/15/2021 12:00 AM</created>
-  <modified>01/05/2022 10:46 PM</modified>
-  <version>34</version>
+  <modified>01/28/2022 12:30 AM</modified>
+  <version>35</version>
   <control>lua_gen</control>
   <driver>DriverWorks</driver>
   <small image_source="c4z">icons/device_sm.png</small>
