@@ -2,11 +2,11 @@
   <copyright>Copyright 2021 Control4. All rights reserved.</copyright>
   <creator>Original by Alex Martin (Mod by Welton Cartel)</creator>
   <manufacturer>Apple</manufacturer>
-  <name>Apple TV Control</name>
+  <name>Apple TV IP  Control</name>
   <model>TV</model>
   <created>09/15/2021 12:00 AM</created>
-  <modified>01/28/2022 12:30 AM</modified>
-  <version>35</version>
+  <modified>01/28/2022 10:16 PM</modified>
+  <version>36</version>
   <control>lua_gen</control>
   <driver>DriverWorks</driver>
   <small image_source="c4z">icons/device_sm.png</small>

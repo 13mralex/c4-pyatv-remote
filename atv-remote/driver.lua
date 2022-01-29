@@ -382,6 +382,9 @@ function PYATV.pollMediaInfo (source, navId, roomId, seq) --pollMediaInfo
 					C4:SetVariable("Play State", array["device_state"])
 					C4:SetVariable("Media Type", array["media_type"])
 				end
+				if (array["app"]) then
+				    C4:SetVariable("Service", array["app_id"])
+				end
 				dbg ("---Polling Complete---")
 				init = "old"
 			else
@@ -524,6 +527,7 @@ function OnDriverInit ()
 	PYATV.ConnectDevice()
 	C4:AddVariable("Play State", "Not Playing", "STRING")
 	C4:AddVariable("Media Type", "Not Playing", "STRING")
+	C4:AddVariable("Service", "Not Playing", "STRING")
 	init = "new"
 end
 
@@ -1271,13 +1275,18 @@ end
 
 function UpdateMediaInfo (data, navId, roomId, seq)
     -- Updates the Now Playing area of the media bar and also the main section on the left of the Now Playing screen.  Doesn't affect the Queue side at all.
+    
     local args = {
-        TITLE = data["title"] or 'Apple TV',
+        TITLE = data["title"] or '',
         ALBUM = data["album"] or '',
         ARTIST = data["artist"] or '',
         GENRE = data["genre"] or '',
         IMAGEURL = data["image"] --or C4:Base64Encode('controller://driver/atv-remote/icons/default_cover_art.png')
     }
+    
+    if (data["app_id"] == "com.apple.TVAirPlay" and args["TITLE"] == "") then
+	   args["TITLE"] = "AirPlay"
+    end
     
     for k,v in pairs(args) do
 	   if (v == "none") then
@@ -1336,7 +1345,7 @@ function UpdateQueue (data, navId, roomId, seq)
 		return
 	end
     --prog = data["position"]
-    local queue = {{title=nil}}
+    local queue = {}
     duration = 0
     position = data["position"] or 0
     if (position == "none") then
@@ -1363,13 +1372,32 @@ function UpdateQueue (data, navId, roomId, seq)
 		  data[k] = nil
 	   end
     end
-	if (data["title"]) then
-		queue = {
-			{title = 'Now Playing', isHeader = true},
-			{title = data["title"], subtitle = data["artist"], duration = duration, ImageUrl = artwork_info["url"]},
-			{title = 'Service', isHeader = true},
-			{title = data["app"], ImageUrl = data["app_icon"]},
-		}
+    
+    if (data["app_id"] == "com.apple.TVAirPlay") then
+	   data["app_icon"] = "controller://driver/atv-remote/icons/airplay.png"
+    end
+    
+	if next(data) then
+	   i = 0
+	    if (data["title"] or data["artist"]) then
+		     i = i+1
+		     queue[i] = {title = 'Now Playing', isHeader = true}
+			i = i+1
+			queue[i] = {title = data["title"], subtitle = data["artist"], duration = duration, ImageUrl = artwork_info["url"]}
+	    end
+	    
+	    if data["app"] then
+		     i = i+1
+			queue[i] = {title = 'Service', isHeader = true}
+			i = i+1
+			
+			if (data["app_id"] == "com.apple.TVAirPlay" and data["app"] ~= "AirPlay") then
+			    queue[i] = {title = data["app"], subtitle = "AirPlay", ImageUrl = data["app_icon"]}
+		     else
+			    queue[i] = {title = data["app"], ImageUrl = data["app_icon"]}
+		     end
+
+	    end
      else
 	   dbg ("data is nil, queue: "..dump(queue))
 	end
@@ -1382,7 +1410,7 @@ function UpdateQueue (data, navId, roomId, seq)
         repeatmode = (REPEAT == true)
     }
     local list = {}
-    if (queue[1]["title"] ~= nil) then
+    if next(queue) then
 	     --dbg("Queue not empty, = "..dump(queue))
 	     icon = {}
 	     icon["url"] = data["app_icon"]
@@ -1390,6 +1418,11 @@ function UpdateQueue (data, navId, roomId, seq)
 		icon["height"] = 512
 	
 		for _, item in ipairs(queue) do
+			 
+			 --if (item["title"] == nil) then
+			 --	item["title"] = ""
+			 --end
+		
 			 if (item["title"] == 'Now Playing') then
 				table.insert(list, XMLTag("item", item))
 			 end
@@ -1397,8 +1430,8 @@ function UpdateQueue (data, navId, roomId, seq)
 				--print("make image list for Now Playing")
 				item.image_list = MakeImageList(artwork_info)
 				table.insert(list, XMLTag("item", item))
-			 else
-				dbg("Queue titles not equal... "..item["title"].." ~= "..data["title"])
+			 --else
+				--dbg("Queue titles not equal... "..item["title"].." ~= "..data["title"])
 			 end
 			 if (item["title"] == 'Service') then
 				table.insert(list, XMLTag("item", item))
