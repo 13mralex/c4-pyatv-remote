@@ -5,8 +5,8 @@
   <name>Apple TV IP  Control</name>
   <model>TV</model>
   <created>09/15/2021 12:00 AM</created>
-  <modified>01/28/2022 10:16 PM</modified>
-  <version>36</version>
+  <modified>03/18/2022 2:45 PM</modified>
+  <version>37</version>
   <control>lua_gen</control>
   <driver>DriverWorks</driver>
   <small image_source="c4z">icons/device_sm.png</small>
@@ -69,6 +69,15 @@
         <type>STRING</type>
         <default />
         <readonly>true</readonly>
+      </property>
+	  <property>
+        <name>Poll Device</name>
+        <type>LIST</type>
+        <default>Only when on</default>
+        <items>
+          <item>Only when on</item>
+          <item>Always</item>
+        </items>
       </property>
       <property>
         <name>Passthrough Mode</name>

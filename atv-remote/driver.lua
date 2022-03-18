@@ -446,23 +446,23 @@ end
 function PYATV.RefreshInterval (cmd) -- ORIGINAL: RefreshInterval
 	dbg ("---Refresh Interval---")
 	--timer0 = nil
-	if (cmd == "start") then
-		if (already_started == "no") then
-			already_started = "yes"
-		end
-		C4:SetTimer(1000, function(timer)
-			PYATV.pollMediaInfo()
-			if (already_started == "no") then
-				timer:Cancel()
-				dbg ("Stopping timer.")
-			end
-		end, true)
-		dbg ("Starting timer.")
-	elseif (cmd == "stop") then
-		already_started = "no"
-		dbg ("Stopping timer.")
-	else
-	end
+	    if (cmd == "start" and already_started == "no") then
+		    if (already_started == "no") then
+			    already_started = "yes"
+		    end
+		    C4:SetTimer(1000, function(timer)
+			    PYATV.pollMediaInfo()
+			    if (already_started == "no") then
+				    timer:Cancel()
+				    dbg ("Stopping timer.")
+			    end
+		    end, true)
+		    dbg ("Starting timer.")
+	    elseif (cmd == "stop" and Properties["Poll Device"] == "Only when on") then
+		    already_started = "no"
+		    dbg ("Stopping timer.")
+	    else
+	    end
 end
 
 function ExecuteCommand (strCommand, tParams)
@@ -597,27 +597,35 @@ function OPC.Debug_Mode (value)
 end
 
 function OPC.Device_Selector (value)
-	if (Properties["AirPlay Credentials"] == "") or (Properties["Companion Credentials"] == "") then
+	--if (Properties["AirPlay Credentials"] == "") or (Properties["Companion Credentials"] == "") then
 		dbg ("Pairing..")
 		PYATV.BeginPairing(value)
-	else
-		dbg ("Connecting..")
-		PYATV.ConnectDevice()
-	end
+	--else
+	--	dbg ("Connecting..")
+	--	PYATV.ConnectDevice()
+	--end
 end
 
 function OPC.Protocol_to_Pair (value)
 	local credentials = value.." Credentials"
 	dbg (credentials)
-	if (Properties[credentials] == "") then
+	--if (Properties[credentials] == "") then
 		PYATV.PairProtocol(value)
-	else
-		PYATV.ConnectDevice()
-	end
+	--else
+	--	PYATV.ConnectDevice()
+	--end
 end
 
 function OPC.Pairing_Code (value)
 	PYATV.PairWithPIN(value)
+end
+
+function OPC.Poll_Device (value)
+     if (value == 'Only when on') then
+	  PYATV.RefreshInterval("stop")
+     elseif (value == "Always") then
+       PYATV.RefreshInterval("start")
+     end
 end
 
 function OPC.On_Power_Off (value)
@@ -755,10 +763,12 @@ function ReceivedFromProxy (idBinding, strCommand, tParams)
 		if (strCommand == 'DEVICE_SELECTED') then
 			PYATV.pollMediaInfo ("proxy")
 			PYATV.RefreshInterval ("start")
+			PYATV.ConnectDevice()
 			MSP.ON (idBinding, strCommand, tParams, args)
 		elseif (strCommand == 'DEVICE_DESELECTED') then
 			-- Device is no longer needed in the room
-			PYATV.RefreshInterval ("stop")
+			--Sending off cmd here does not guarantee device is not still active in other rooms
+			--PYATV.RefreshInterval ("stop")
 		elseif (strCommand == 'GetDashboard') then
 			-- A navigator has requested an update of the dashboard
 			PYATV.pollMediaInfo ("proxy")
@@ -777,7 +787,9 @@ function ReceivedFromProxy (idBinding, strCommand, tParams)
 			SHUFFLE = not (SHUFFLE)
 			--UpdateQueue()
 		elseif (strCommand == 'OFF') then
+		     --Stop timer only when all respective rooms are off
 			PYATV.RefreshInterval ("stop")
+			C4:SetVariable("Service", "OFF")
 		end
 		if (MSP[strCommand] ~= nil) and (type(MSP[strCommand])=='function') then
 			MSP[strCommand] (idBinding, strCommand, tParams, args)
