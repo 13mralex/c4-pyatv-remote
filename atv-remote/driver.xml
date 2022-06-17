@@ -1,12 +1,12 @@
 <devicedata>
-  <copyright>Copyright 2021 Control4. All rights reserved.</copyright>
+  <copyright>Copyright 2022 Control4. All rights reserved.</copyright>
   <creator>Original by Alex Martin (Mod by Welton Cartel)</creator>
   <manufacturer>Apple</manufacturer>
   <name>Apple TV IP  Control</name>
   <model>TV</model>
   <created>09/15/2021 12:00 AM</created>
-  <modified>03/18/2022 2:45 PM</modified>
-  <version>37</version>
+  <modified>06/17/2022 10:00 AM</modified>
+  <version>38</version>
   <control>lua_gen</control>
   <driver>DriverWorks</driver>
   <small image_source="c4z">icons/device_sm.png</small>
@@ -30,7 +30,7 @@
       <property>
         <name>Server IP</name>
         <type>STRING</type>
-        <default />
+        <default/>
         <readonly>false</readonly>
       </property>
       <property>
@@ -50,24 +50,24 @@
       <property>
         <name>Pairing Code</name>
         <type>STRING</type>
-        <default />
+        <default/>
       </property>
       <property>
         <name>Device ID</name>
         <type>STRING</type>
-        <default />
+        <default/>
         <readonly>true</readonly>
       </property>
       <property>
         <name>AirPlay Credentials</name>
         <type>STRING</type>
-        <default />
+        <default/>
         <readonly>true</readonly>
       </property>
       <property>
         <name>Companion Credentials</name>
         <type>STRING</type>
-        <default />
+        <default/>
         <readonly>true</readonly>
       </property>
 	  <property>
@@ -510,36 +510,6 @@
       </classes>
     </connection>
     <connection proxybindingid="5001">
-      <id>1001</id>
-      <type>5</type>
-      <connectionname>Video in from Apple TV OSD</connectionname>
-      <consumer>True</consumer>
-      <linelevel>True</linelevel>
-      <idautobind>1</idautobind>
-      <hidden>True</hidden>
-      <classes>
-        <class>
-          <classname>HDMI</classname>
-          <autobind>true</autobind>
-        </class>
-      </classes>
-    </connection>
-    <connection proxybindingid="5001">
-      <id>1101</id>
-      <type>5</type>
-      <connectionname>Video in from Apple TV App Switch</connectionname>
-      <consumer>True</consumer>
-      <linelevel>True</linelevel>
-      <idautobind>10</idautobind>
-      <hidden>True</hidden>
-      <classes>
-        <class>
-          <classname>HDMI</classname>
-          <autobind>true</autobind>
-        </class>
-      </classes>
-    </connection>
-    <connection proxybindingid="5001">
       <id>2001</id>
       <type>5</type>
       <connectionname>AV Out</connectionname>
@@ -548,52 +518,6 @@
       <classes>
         <class>
           <classname>HDMI</classname>
-        </class>
-      </classes>
-    </connection>
-    <connection proxybindingid="5001">
-      <id>3001</id>
-      <type>6</type>
-      <connectionname>Audio In from Apple TV OSD</connectionname>
-      <consumer>True</consumer>
-      <linelevel>True</linelevel>
-      <idautobind>2</idautobind>
-      <hidden>True</hidden>
-      <classes>
-        <class>
-          <classname>STEREO</classname>
-          <autobind>true</autobind>
-        </class>
-        <class>
-          <classname>DIGITAL_COAX</classname>
-          <autobind>true</autobind>
-        </class>
-        <class>
-          <classname>DIGITAL_OPTICAL</classname>
-          <autobind>true</autobind>
-        </class>
-      </classes>
-    </connection>
-    <connection proxybindingid="5001">
-      <id>3101</id>
-      <type>6</type>
-      <connectionname>Audio In from Apple TV App Switch</connectionname>
-      <consumer>True</consumer>
-      <linelevel>True</linelevel>
-      <idautobind>20</idautobind>
-      <hidden>True</hidden>
-      <classes>
-        <class>
-          <classname>STEREO</classname>
-          <autobind>true</autobind>
-        </class>
-        <class>
-          <classname>DIGITAL_COAX</classname>
-          <autobind>true</autobind>
-        </class>
-        <class>
-          <classname>DIGITAL_OPTICAL</classname>
-          <autobind>true</autobind>
         </class>
       </classes>
     </connection>
@@ -618,10 +542,9 @@
     <connection proxybindingid="5002">
       <id>2110</id>
       <type>5</type>
-      <connectionname>Apple TV App Switch Video Out</connectionname>
+      <connectionname>App Switch Video Out</connectionname>
       <consumer>False</consumer>
       <linelevel>True</linelevel>
-      <idautobind>10</idautobind>
       <hidden>True</hidden>
       <classes>
         <class>
@@ -637,10 +560,9 @@
     <connection proxybindingid="5002">
       <id>4110</id>
       <type>6</type>
-      <connectionname>Apple TV App Switch Audio Out</connectionname>
+      <connectionname>App Switch Audio Out</connectionname>
       <consumer>False</consumer>
       <linelevel>True</linelevel>
-      <idautobind>20</idautobind>
       <hidden>True</hidden>
       <classes>
         <class>
@@ -660,350 +582,300 @@
     <connection proxybindingid="5002">
       <id>3101</id>
       <type>5</type>
-      <connectionname>App 1</connectionname>
+      <connectionname>MiniApp 1</connectionname>
       <consumer>True</consumer>
       <linelevel>False</linelevel>
-      <idautobind>33101</idautobind>
       <classes>
         <class>
           <classname>RF_MINI_APP</classname>
-          <autobind>True</autobind>
         </class>
       </classes>
     </connection>
     <connection proxybindingid="5002">
       <id>3102</id>
       <type>5</type>
-      <connectionname>App 2</connectionname>
+      <connectionname>MiniApp 2</connectionname>
       <consumer>True</consumer>
       <linelevel>False</linelevel>
-      <idautobind>33101</idautobind>
       <classes>
         <class>
           <classname>RF_MINI_APP</classname>
-          <autobind>True</autobind>
         </class>
       </classes>
     </connection>
     <connection proxybindingid="5002">
       <id>3103</id>
       <type>5</type>
-      <connectionname>App 3</connectionname>
+      <connectionname>MiniApp 3</connectionname>
       <consumer>True</consumer>
       <linelevel>False</linelevel>
-      <idautobind>33101</idautobind>
       <classes>
         <class>
           <classname>RF_MINI_APP</classname>
-          <autobind>True</autobind>
         </class>
       </classes>
     </connection>
     <connection proxybindingid="5002">
       <id>3104</id>
       <type>5</type>
-      <connectionname>App 4</connectionname>
+      <connectionname>MiniApp 4</connectionname>
       <consumer>True</consumer>
       <linelevel>False</linelevel>
-      <idautobind>33101</idautobind>
       <classes>
         <class>
           <classname>RF_MINI_APP</classname>
-          <autobind>True</autobind>
         </class>
       </classes>
     </connection>
     <connection proxybindingid="5002">
       <id>3105</id>
       <type>5</type>
-      <connectionname>App 5</connectionname>
+      <connectionname>MiniApp 5</connectionname>
       <consumer>True</consumer>
       <linelevel>False</linelevel>
-      <idautobind>33101</idautobind>
       <classes>
         <class>
           <classname>RF_MINI_APP</classname>
-          <autobind>True</autobind>
         </class>
       </classes>
     </connection>
     <connection proxybindingid="5002">
       <id>3106</id>
       <type>5</type>
-      <connectionname>App 6</connectionname>
+      <connectionname>MiniApp 6</connectionname>
       <consumer>True</consumer>
       <linelevel>False</linelevel>
-      <idautobind>33101</idautobind>
       <classes>
         <class>
           <classname>RF_MINI_APP</classname>
-          <autobind>True</autobind>
         </class>
       </classes>
     </connection>
     <connection proxybindingid="5002">
       <id>3107</id>
       <type>5</type>
-      <connectionname>App 7</connectionname>
+      <connectionname>MiniApp 7</connectionname>
       <consumer>True</consumer>
       <linelevel>False</linelevel>
-      <idautobind>33101</idautobind>
       <classes>
         <class>
           <classname>RF_MINI_APP</classname>
-          <autobind>True</autobind>
         </class>
       </classes>
     </connection>
     <connection proxybindingid="5002">
       <id>3108</id>
       <type>5</type>
-      <connectionname>App 8</connectionname>
+      <connectionname>MiniApp 8</connectionname>
       <consumer>True</consumer>
       <linelevel>False</linelevel>
-      <idautobind>33101</idautobind>
       <classes>
         <class>
           <classname>RF_MINI_APP</classname>
-          <autobind>True</autobind>
         </class>
       </classes>
     </connection>
     <connection proxybindingid="5002">
       <id>3109</id>
       <type>5</type>
-      <connectionname>App 9</connectionname>
+      <connectionname>MiniApp 9</connectionname>
       <consumer>True</consumer>
       <linelevel>False</linelevel>
-      <idautobind>33101</idautobind>
       <classes>
         <class>
           <classname>RF_MINI_APP</classname>
-          <autobind>True</autobind>
         </class>
       </classes>
     </connection>
     <connection proxybindingid="5002">
       <id>3110</id>
       <type>5</type>
-      <connectionname>App 10</connectionname>
+      <connectionname>MiniApp 10</connectionname>
       <consumer>True</consumer>
       <linelevel>False</linelevel>
-      <idautobind>33101</idautobind>
       <classes>
         <class>
           <classname>RF_MINI_APP</classname>
-          <autobind>True</autobind>
         </class>
       </classes>
     </connection>
     <connection proxybindingid="5002">
       <id>3111</id>
       <type>5</type>
-      <connectionname>App 11</connectionname>
+      <connectionname>MiniApp 11</connectionname>
       <consumer>True</consumer>
       <linelevel>False</linelevel>
-      <idautobind>33101</idautobind>
       <classes>
         <class>
           <classname>RF_MINI_APP</classname>
-          <autobind>True</autobind>
         </class>
       </classes>
     </connection>
     <connection proxybindingid="5002">
       <id>3112</id>
       <type>5</type>
-      <connectionname>App 12</connectionname>
+      <connectionname>MiniApp 12</connectionname>
       <consumer>True</consumer>
       <linelevel>False</linelevel>
-      <idautobind>33101</idautobind>
       <classes>
         <class>
           <classname>RF_MINI_APP</classname>
-          <autobind>True</autobind>
         </class>
       </classes>
     </connection>
     <connection proxybindingid="5002">
       <id>3113</id>
       <type>5</type>
-      <connectionname>App 13</connectionname>
+      <connectionname>MiniApp 13</connectionname>
       <consumer>True</consumer>
       <linelevel>False</linelevel>
-      <idautobind>33101</idautobind>
       <classes>
         <class>
           <classname>RF_MINI_APP</classname>
-          <autobind>True</autobind>
         </class>
       </classes>
     </connection>
     <connection proxybindingid="5002">
       <id>3114</id>
       <type>5</type>
-      <connectionname>App 14</connectionname>
+      <connectionname>MiniApp 14</connectionname>
       <consumer>True</consumer>
       <linelevel>False</linelevel>
-      <idautobind>33101</idautobind>
       <classes>
         <class>
           <classname>RF_MINI_APP</classname>
-          <autobind>True</autobind>
         </class>
       </classes>
     </connection>
     <connection proxybindingid="5002">
       <id>3115</id>
       <type>5</type>
-      <connectionname>App 15</connectionname>
+      <connectionname>MiniApp 15</connectionname>
       <consumer>True</consumer>
       <linelevel>False</linelevel>
-      <idautobind>33101</idautobind>
       <classes>
         <class>
           <classname>RF_MINI_APP</classname>
-          <autobind>True</autobind>
         </class>
       </classes>
     </connection>
     <connection proxybindingid="5002">
       <id>3116</id>
       <type>5</type>
-      <connectionname>App 16</connectionname>
+      <connectionname>MiniApp 16</connectionname>
       <consumer>True</consumer>
       <linelevel>False</linelevel>
-      <idautobind>33101</idautobind>
       <classes>
         <class>
           <classname>RF_MINI_APP</classname>
-          <autobind>True</autobind>
         </class>
       </classes>
     </connection>
     <connection proxybindingid="5002">
       <id>3117</id>
       <type>5</type>
-      <connectionname>App 17</connectionname>
+      <connectionname>MiniApp 17</connectionname>
       <consumer>True</consumer>
       <linelevel>False</linelevel>
-      <idautobind>33101</idautobind>
       <classes>
         <class>
           <classname>RF_MINI_APP</classname>
-          <autobind>True</autobind>
         </class>
       </classes>
     </connection>
     <connection proxybindingid="5002">
       <id>3118</id>
       <type>5</type>
-      <connectionname>App 18</connectionname>
+      <connectionname>MiniApp 18</connectionname>
       <consumer>True</consumer>
       <linelevel>False</linelevel>
-      <idautobind>33101</idautobind>
       <classes>
         <class>
           <classname>RF_MINI_APP</classname>
-          <autobind>True</autobind>
         </class>
       </classes>
     </connection>
     <connection proxybindingid="5002">
       <id>3119</id>
       <type>5</type>
-      <connectionname>App 19</connectionname>
+      <connectionname>MiniApp 19</connectionname>
       <consumer>True</consumer>
       <linelevel>False</linelevel>
-      <idautobind>33101</idautobind>
       <classes>
         <class>
           <classname>RF_MINI_APP</classname>
-          <autobind>True</autobind>
         </class>
       </classes>
     </connection>
     <connection proxybindingid="5002">
       <id>3120</id>
       <type>5</type>
-      <connectionname>App 20</connectionname>
+      <connectionname>MiniApp 20</connectionname>
       <consumer>True</consumer>
       <linelevel>False</linelevel>
-      <idautobind>33101</idautobind>
       <classes>
         <class>
           <classname>RF_MINI_APP</classname>
-          <autobind>True</autobind>
         </class>
       </classes>
     </connection>
     <connection proxybindingid="5002">
       <id>3121</id>
       <type>5</type>
-      <connectionname>App 21</connectionname>
+      <connectionname>MiniApp 21</connectionname>
       <consumer>True</consumer>
       <linelevel>False</linelevel>
-      <idautobind>33101</idautobind>
       <classes>
         <class>
           <classname>RF_MINI_APP</classname>
-          <autobind>True</autobind>
         </class>
       </classes>
     </connection>
     <connection proxybindingid="5002">
       <id>3122</id>
       <type>5</type>
-      <connectionname>App 22</connectionname>
+      <connectionname>MiniApp 22</connectionname>
       <consumer>True</consumer>
       <linelevel>False</linelevel>
-      <idautobind>33101</idautobind>
       <classes>
         <class>
           <classname>RF_MINI_APP</classname>
-          <autobind>True</autobind>
         </class>
       </classes>
     </connection>
     <connection proxybindingid="5002">
       <id>3123</id>
       <type>5</type>
-      <connectionname>App 23</connectionname>
+      <connectionname>MiniApp 23</connectionname>
       <consumer>True</consumer>
       <linelevel>False</linelevel>
-      <idautobind>33101</idautobind>
       <classes>
         <class>
           <classname>RF_MINI_APP</classname>
-          <autobind>True</autobind>
         </class>
       </classes>
     </connection>
     <connection proxybindingid="5002">
       <id>3124</id>
       <type>5</type>
-      <connectionname>App 24</connectionname>
+      <connectionname>MiniApp 24</connectionname>
       <consumer>True</consumer>
       <linelevel>False</linelevel>
-      <idautobind>33101</idautobind>
       <classes>
         <class>
           <classname>RF_MINI_APP</classname>
-          <autobind>True</autobind>
         </class>
       </classes>
     </connection>
     <connection proxybindingid="5002">
       <id>3125</id>
       <type>5</type>
-      <connectionname>App 25</connectionname>
+      <connectionname>MiniApp 25</connectionname>
       <consumer>True</consumer>
       <linelevel>False</linelevel>
-      <idautobind>33101</idautobind>
       <classes>
         <class>
           <classname>RF_MINI_APP</classname>
-          <autobind>True</autobind>
         </class>
       </classes>
     </connection>
