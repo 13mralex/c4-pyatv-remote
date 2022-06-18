@@ -1,12 +1,12 @@
 <devicedata>
-  <copyright>Copyright 2022 Control4. All rights reserved.</copyright>
+  <copyright>Copyright 2022 Alex Martin. All rights reserved.</copyright>
   <creator>Original by Alex Martin (Mod by Welton Cartel)</creator>
   <manufacturer>Apple</manufacturer>
   <name>Apple TV IP  Control</name>
   <model>TV</model>
   <created>09/15/2021 12:00 AM</created>
-  <modified>06/17/2022 10:00 AM</modified>
-  <version>38</version>
+  <modified>06/19/2022 2:00 AM</modified>
+  <version>39</version>
   <control>lua_gen</control>
   <driver>DriverWorks</driver>
   <small image_source="c4z">icons/device_sm.png</small>
@@ -510,6 +510,36 @@
       </classes>
     </connection>
     <connection proxybindingid="5001">
+      <id>1001</id>
+      <type>5</type>
+      <connectionname>Video in from Apple TV OSD</connectionname>
+      <consumer>True</consumer>
+      <linelevel>True</linelevel>
+      <idautobind>1</idautobind>
+      <hidden>True</hidden>
+      <classes>
+        <class>
+          <classname>HDMI</classname>
+          <autobind>true</autobind>
+        </class>
+      </classes>
+    </connection>
+    <connection proxybindingid="5001">
+      <id>1101</id>
+      <type>5</type>
+      <connectionname>Video in from Apple TV App Switch</connectionname>
+      <consumer>True</consumer>
+      <linelevel>True</linelevel>
+      <idautobind>10</idautobind>
+      <hidden>True</hidden>
+      <classes>
+        <class>
+          <classname>HDMI</classname>
+          <autobind>true</autobind>
+        </class>
+      </classes>
+    </connection>
+    <connection proxybindingid="5001">
       <id>2001</id>
       <type>5</type>
       <connectionname>AV Out</connectionname>
@@ -518,6 +548,52 @@
       <classes>
         <class>
           <classname>HDMI</classname>
+        </class>
+      </classes>
+    </connection>
+    <connection proxybindingid="5001">
+      <id>3001</id>
+      <type>6</type>
+      <connectionname>Audio In from Apple TV OSD</connectionname>
+      <consumer>True</consumer>
+      <linelevel>True</linelevel>
+      <idautobind>2</idautobind>
+      <hidden>True</hidden>
+      <classes>
+        <class>
+          <classname>STEREO</classname>
+          <autobind>true</autobind>
+        </class>
+        <class>
+          <classname>DIGITAL_COAX</classname>
+          <autobind>true</autobind>
+        </class>
+        <class>
+          <classname>DIGITAL_OPTICAL</classname>
+          <autobind>true</autobind>
+        </class>
+      </classes>
+    </connection>
+    <connection proxybindingid="5001">
+      <id>3101</id>
+      <type>6</type>
+      <connectionname>Audio In from Apple TV App Switch</connectionname>
+      <consumer>True</consumer>
+      <linelevel>True</linelevel>
+      <idautobind>20</idautobind>
+      <hidden>True</hidden>
+      <classes>
+        <class>
+          <classname>STEREO</classname>
+          <autobind>true</autobind>
+        </class>
+        <class>
+          <classname>DIGITAL_COAX</classname>
+          <autobind>true</autobind>
+        </class>
+        <class>
+          <classname>DIGITAL_OPTICAL</classname>
+          <autobind>true</autobind>
         </class>
       </classes>
     </connection>
@@ -540,11 +616,54 @@
       </classes>
     </connection>
     <connection proxybindingid="5002">
-      <id>2110</id>
+      <id>2010</id>
       <type>5</type>
-      <connectionname>App Switch Video Out</connectionname>
+      <connectionname>Apple TV OSD Video Out</connectionname>
       <consumer>False</consumer>
       <linelevel>True</linelevel>
+      <idautobind>1</idautobind>
+      <hidden>True</hidden>
+      <classes>
+        <class>
+          <classname>COMPONENT</classname>
+          <autobind>true</autobind>
+        </class>
+        <class>
+          <classname>HDMI</classname>
+          <autobind>true</autobind>
+        </class>
+      </classes>
+    </connection>
+    <connection proxybindingid="5002">
+      <id>4010</id>
+      <type>6</type>
+      <connectionname>Apple TV OSD Audio Out</connectionname>
+      <consumer>False</consumer>
+      <linelevel>True</linelevel>
+      <idautobind>2</idautobind>
+      <hidden>True</hidden>
+      <classes>
+        <class>
+          <classname>STEREO</classname>
+          <autobind>true</autobind>
+        </class>
+        <class>
+          <classname>DIGITAL_COAX</classname>
+          <autobind>true</autobind>
+        </class>
+        <class>
+          <classname>DIGITAL_OPTICAL</classname>
+          <autobind>true</autobind>
+        </class>
+      </classes>
+    </connection>
+    <connection proxybindingid="5002">
+      <id>2110</id>
+      <type>5</type>
+      <connectionname>Apple TV App Switch Video Out</connectionname>
+      <consumer>False</consumer>
+      <linelevel>True</linelevel>
+      <idautobind>10</idautobind>
       <hidden>True</hidden>
       <classes>
         <class>
@@ -560,9 +679,10 @@
     <connection proxybindingid="5002">
       <id>4110</id>
       <type>6</type>
-      <connectionname>App Switch Audio Out</connectionname>
+      <connectionname>Apple TV App Switch Audio Out</connectionname>
       <consumer>False</consumer>
       <linelevel>True</linelevel>
+      <idautobind>20</idautobind>
       <hidden>True</hidden>
       <classes>
         <class>
