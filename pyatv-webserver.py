@@ -10,6 +10,9 @@ from pyatv.interface import (
     RemoteControl,
     retrieve_commands,
 )
+from pyatv.const import (
+    InputAction
+)
 from enum import Enum
 import datetime
 from pyatv.const import Protocol
@@ -240,6 +243,23 @@ async def remote_control(request, atv):
     except Exception as ex:
         return web.Response(text=f"Remote control command failed: {ex}")
     return web.Response(text="OK")
+
+@routes.get("/remote_control/{id}/{command}/{action}")
+@web_command
+async def remote_control(request, atv):
+    try:
+        rawCmd = request.match_info["command"]
+        action = request.match_info["action"]
+        cmd = getattr(atv.remote_control, rawCmd)
+        act = 0
+        if action == "doubletap":
+            act = 1
+        elif action == "hold":
+            act = 2
+        finalCmd = await cmd(InputAction(act))
+    except Exception as ex:
+        return web.Response(text=f"Remote control command failed: {ex}")
+    return web.Response(text=f"OK")
 
 @routes.get("/playing/{id}")
 @web_command

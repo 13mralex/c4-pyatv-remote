@@ -5,8 +5,8 @@
   <name>Apple TV IP  Control</name>
   <model>TV</model>
   <created>09/15/2021 12:00 AM</created>
-  <modified>06/19/2022 2:00 AM</modified>
-  <version>39</version>
+  <modified>06/19/2022 8:25 PM</modified>
+  <version>40</version>
   <control>lua_gen</control>
   <driver>DriverWorks</driver>
   <small image_source="c4z">icons/device_sm.png</small>
@@ -30,7 +30,7 @@
       <property>
         <name>Server IP</name>
         <type>STRING</type>
-        <default/>
+        <default />
         <readonly>false</readonly>
       </property>
       <property>
@@ -50,27 +50,27 @@
       <property>
         <name>Pairing Code</name>
         <type>STRING</type>
-        <default/>
+        <default />
       </property>
       <property>
         <name>Device ID</name>
         <type>STRING</type>
-        <default/>
+        <default />
         <readonly>true</readonly>
       </property>
       <property>
         <name>AirPlay Credentials</name>
         <type>STRING</type>
-        <default/>
+        <default />
         <readonly>true</readonly>
       </property>
       <property>
         <name>Companion Credentials</name>
         <type>STRING</type>
-        <default/>
+        <default />
         <readonly>true</readonly>
       </property>
-	  <property>
+      <property>
         <name>Poll Device</name>
         <type>LIST</type>
         <default>Only when on</default>
