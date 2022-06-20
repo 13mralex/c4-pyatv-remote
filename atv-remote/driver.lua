@@ -784,6 +784,8 @@ function OPC.STAR_Button (value)
 		CMDS.STAR = 'menu'
 	elseif (value == 'Dashboard (Hold TV Button)') then
 		CMDS.STAR = 'home_hold'
+	elseif (value == 'Play/Pause') then
+		CMDS.RECORD = 'play_pause'
 	end
 end
 
@@ -798,6 +800,24 @@ function OPC.POUND_Button (value)
 		CMDS.POUND = 'menu'
 	elseif (value == 'Dashboard (Hold TV Button)') then
 		CMDS.POUND = 'home_hold'
+	elseif (value == 'Play/Pause') then
+		CMDS.RECORD = 'play_pause'
+	end
+end
+
+function OPC.RECORD_Button (value)
+	if (value == 'Do Nothing') then
+		CMDS.RECORD = nil
+	elseif (value == 'Home') then
+		CMDS.RECORD = 'top_menu'
+	elseif (value == 'Back') then
+		CMDS.RECORD = 'cancel'
+	elseif (value == 'Menu') then
+		CMDS.RECORD = 'menu'
+	elseif (value == 'Dashboard (Hold TV Button)') then
+		CMDS.RECORD = 'home_hold'
+	elseif (value == 'Play/Pause') then
+		CMDS.RECORD = 'play_pause'
 	end
 end
 
@@ -1193,6 +1213,13 @@ function MSP.STOP_SCAN_REV (idBinding, strCommand, tParams, args)
 	local pytvCommand = CMDS [strCommand]
 	if (pytvCommand ~= nil) then
 		PYATV.RemoteCommandHold (pytvCommand, "stop")
+	end
+end
+
+function MSP.RECORD (idBinding, strCommand, tParams, args)
+	local pytvCommand = CMDS [strCommand]
+	if (pytvCommand ~= nil) then
+		PYATV.RemoteCommand (pytvCommand)
 	end
 end
 

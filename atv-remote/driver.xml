@@ -2,7 +2,7 @@
   <copyright>Copyright 2022 Alex Martin. All rights reserved.</copyright>
   <creator>Original by Alex Martin (Mod by Welton Cartel)</creator>
   <manufacturer>Apple</manufacturer>
-  <name>Apple TV IP  Control</name>
+  <name>Apple TV IP Control</name>
   <model>TV</model>
   <created>09/15/2021 12:00 AM</created>
   <modified>06/19/2022 8:25 PM</modified>
@@ -97,6 +97,7 @@
           <item>Home</item>
           <item>Back</item>
           <item>Menu</item>
+		  <item>Dashboard (Hold TV Button)</item>
         </items>
         <default>Do Nothing</default>
         <readonly>false</readonly>
@@ -109,6 +110,7 @@
           <item>Home</item>
           <item>Back</item>
           <item>Menu</item>
+		  <item>Dashboard (Hold TV Button)</item>
         </items>
         <default>Do Nothing</default>
         <readonly>false</readonly>
@@ -121,6 +123,7 @@
           <item>Home</item>
           <item>Back</item>
           <item>Menu</item>
+		  <item>Dashboard (Hold TV Button)</item>
         </items>
         <default>Home</default>
         <readonly>false</readonly>
@@ -133,6 +136,7 @@
           <item>Home</item>
           <item>Back</item>
           <item>Menu</item>
+		  <item>Dashboard (Hold TV Button)</item>
         </items>
         <default>Menu</default>
         <readonly>false</readonly>
@@ -145,8 +149,9 @@
           <item>Home</item>
           <item>Back</item>
           <item>Menu</item>
+		  <item>Dashboard (Hold TV Button)</item>
         </items>
-        <default>Menu</default>
+        <default>Dashboard (Hold TV Button)</default>
         <readonly>false</readonly>
       </property>
       <property>
@@ -157,6 +162,7 @@
           <item>Home</item>
           <item>Back</item>
           <item>Menu</item>
+		  <item>Dashboard (Hold TV Button)</item>
         </items>
         <default>Menu</default>
         <readonly>false</readonly>
@@ -169,6 +175,7 @@
           <item>Home</item>
           <item>Back</item>
           <item>Menu</item>
+		  <item>Dashboard (Hold TV Button)</item>
         </items>
         <default>Back</default>
         <readonly>false</readonly>
@@ -181,6 +188,8 @@
           <item>Home</item>
           <item>Back</item>
           <item>Menu</item>
+		  <item>Dashboard (Hold TV Button)</item>
+		  <item>Play/Pause</item>
         </items>
         <default>Do Nothing</default>
         <readonly>false</readonly>
@@ -193,8 +202,24 @@
           <item>Home</item>
           <item>Back</item>
           <item>Menu</item>
+		  <item>Dashboard (Hold TV Button)</item>
+		  <item>Play/Pause</item>
         </items>
         <default>Do Nothing</default>
+        <readonly>false</readonly>
+      </property>
+	  <property>
+        <name>RECORD Button</name>
+        <type>LIST</type>
+        <items>
+          <item>Do Nothing</item>
+          <item>Home</item>
+          <item>Back</item>
+          <item>Menu</item>
+		  <item>Dashboard (Hold TV Button)</item>
+		  <item>Play/Pause</item>
+        </items>
+        <default>Play/Pause</default>
         <readonly>false</readonly>
       </property>
     </properties>
