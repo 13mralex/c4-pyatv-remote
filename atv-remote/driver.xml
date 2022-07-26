@@ -5,8 +5,8 @@
   <name>Apple TV IP Control</name>
   <model>TV</model>
   <created>09/15/2021 12:00 AM</created>
-  <modified>06/19/2022 8:25 PM</modified>
-  <version>40</version>
+  <modified>07/26/2022 7:29 PM</modified>
+  <version>41</version>
   <control>lua_gen</control>
   <driver>DriverWorks</driver>
   <small image_source="c4z">icons/device_sm.png</small>
@@ -97,7 +97,7 @@
           <item>Home</item>
           <item>Back</item>
           <item>Menu</item>
-		  <item>Dashboard (Hold TV Button)</item>
+          <item>Dashboard (Hold TV Button)</item>
         </items>
         <default>Do Nothing</default>
         <readonly>false</readonly>
@@ -110,7 +110,7 @@
           <item>Home</item>
           <item>Back</item>
           <item>Menu</item>
-		  <item>Dashboard (Hold TV Button)</item>
+          <item>Dashboard (Hold TV Button)</item>
         </items>
         <default>Do Nothing</default>
         <readonly>false</readonly>
@@ -123,7 +123,7 @@
           <item>Home</item>
           <item>Back</item>
           <item>Menu</item>
-		  <item>Dashboard (Hold TV Button)</item>
+          <item>Dashboard (Hold TV Button)</item>
         </items>
         <default>Home</default>
         <readonly>false</readonly>
@@ -136,7 +136,7 @@
           <item>Home</item>
           <item>Back</item>
           <item>Menu</item>
-		  <item>Dashboard (Hold TV Button)</item>
+          <item>Dashboard (Hold TV Button)</item>
         </items>
         <default>Menu</default>
         <readonly>false</readonly>
@@ -149,7 +149,7 @@
           <item>Home</item>
           <item>Back</item>
           <item>Menu</item>
-		  <item>Dashboard (Hold TV Button)</item>
+          <item>Dashboard (Hold TV Button)</item>
         </items>
         <default>Dashboard (Hold TV Button)</default>
         <readonly>false</readonly>
@@ -162,7 +162,7 @@
           <item>Home</item>
           <item>Back</item>
           <item>Menu</item>
-		  <item>Dashboard (Hold TV Button)</item>
+          <item>Dashboard (Hold TV Button)</item>
         </items>
         <default>Menu</default>
         <readonly>false</readonly>
@@ -175,7 +175,7 @@
           <item>Home</item>
           <item>Back</item>
           <item>Menu</item>
-		  <item>Dashboard (Hold TV Button)</item>
+          <item>Dashboard (Hold TV Button)</item>
         </items>
         <default>Back</default>
         <readonly>false</readonly>
@@ -188,8 +188,8 @@
           <item>Home</item>
           <item>Back</item>
           <item>Menu</item>
-		  <item>Dashboard (Hold TV Button)</item>
-		  <item>Play/Pause</item>
+          <item>Dashboard (Hold TV Button)</item>
+          <item>Play/Pause</item>
         </items>
         <default>Do Nothing</default>
         <readonly>false</readonly>
@@ -202,13 +202,13 @@
           <item>Home</item>
           <item>Back</item>
           <item>Menu</item>
-		  <item>Dashboard (Hold TV Button)</item>
-		  <item>Play/Pause</item>
+          <item>Dashboard (Hold TV Button)</item>
+          <item>Play/Pause</item>
         </items>
         <default>Do Nothing</default>
         <readonly>false</readonly>
       </property>
-	  <property>
+      <property>
         <name>RECORD Button</name>
         <type>LIST</type>
         <items>
@@ -216,11 +216,18 @@
           <item>Home</item>
           <item>Back</item>
           <item>Menu</item>
-		  <item>Dashboard (Hold TV Button)</item>
-		  <item>Play/Pause</item>
+          <item>Dashboard (Hold TV Button)</item>
+          <item>Play/Pause</item>
         </items>
         <default>Play/Pause</default>
         <readonly>false</readonly>
+      </property>
+      <property>
+        <name>Button Hold Threshold</name>
+        <type>RANGED_INTEGER</type>
+        <default>150</default>
+        <minimum>100</minimum>
+        <maximum>1000</maximum>
       </property>
     </properties>
     <commands>

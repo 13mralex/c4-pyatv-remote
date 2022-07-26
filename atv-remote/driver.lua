@@ -1068,7 +1068,7 @@ function MSP.END_ENTER (idBinding, strCommand, tParams, args)
 	local pytvCommand = CMDS [strCommand]
 	if (pytvCommand ~= nil) then
 		  
-	     if (tonumber(tParams["DURATION"]) > 100) then
+	     if (tonumber(tParams["DURATION"]) > tonumber(Properties["Button Hold Threshold"])) then
 		  PYATV.RemoteCommandHold (pytvCommand, "sendCmd")
 		else
 		  PYATV.RemoteCommand (pytvCommand)
