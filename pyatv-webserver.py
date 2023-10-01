@@ -9,6 +9,7 @@ from pyatv.interface import (
     PushListener,
     RemoteControl,
     retrieve_commands,
+    Audio
 )
 from pyatv.const import (
     InputAction
@@ -242,6 +243,16 @@ async def remote_control(request, atv):
         await getattr(atv.remote_control, request.match_info["command"])()
     except Exception as ex:
         return web.Response(text=f"Remote control command failed: {ex}")
+    return web.Response(text="OK")
+    
+@routes.get("/set_volume/{id}/{level}")
+@web_command
+async def set_volume(request, atv):
+    try:
+        level = float(request.match_info["level"])
+        atv.audio.set_volume(level)
+    except Exception as ex:
+        return web.Response(text=f"Set volume command failed: {ex}")
     return web.Response(text="OK")
 
 @routes.get("/remote_control/{id}/{command}/{action}")

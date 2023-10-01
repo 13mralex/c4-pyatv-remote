@@ -1,6 +1,7 @@
 ﻿<Driver type="c4z" name="atv-remote">
  <Items>
   <Item type="dir" c4zDir="www" name="www" recurse="true" exclude="false" />
+  <Item type="dir" c4zDir="drivers-common-public" name="drivers-common-public" recurse="true" exclude="false" />
   <Item type="file" name="driver.lua" />
   <Item type="file" name="driver.xml" />
  </Items>

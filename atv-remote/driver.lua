@@ -1,5 +1,5 @@
-require "json"
-JSON=(loadstring(json.JSON_LIBRARY_CHUNK))()
+JSON = require ('drivers-common-public.module.json')
+WebSocket = require ('drivers-common-public.module.websocket')
 
 do	--Globals
 	OPC = OPC or {}
@@ -71,6 +71,7 @@ do	--Globals
 		['TenPlay']			= 'com.networkten.epg',    -- Returned as "10 play" from ATV App List
 		['Hulu']				= 'com.hulu.plus',
 		['YouTube']			= 'com.google.ios.youtube',
+		['Pandora']			= 'com.pandora',		  -- Returned as no name
 	} --['C4 Mini App Name']    = 'ATV App ID'             -- ATV App List output to Lua Output window by turning on Debug Mode and run Test Connection in actions.
 	
 	APPLE_BUNDLES = {}
@@ -99,6 +100,127 @@ end
 function dbg (strDebugText, ...)
 	if (DEBUGPRINT) then print (os.date ('%x %X : ')..(strDebugText or ''), ...) end
 end
+
+function PYATV.ConnectWebsocket()
+
+     wsURL = "ws://"..Properties["Server IP"]..":"..Properties["Server Port"].."/ws/"..Properties["Device ID"]	
+	--PersistData["ATVSocket"] = PersistData["ATVSocket"] or "none"
+	
+	dbg("Starting Websocket: "..wsURL)
+	
+     if (PersistData["ATVSocket"]) then
+		PersistData["ATVSocket"]:delete ()
+	end
+	PersistData["ATVSocket"] = WebSocket:new (wsURL)
+
+	local pm = function (self, data)
+		dbg ('WS Message Received: ' .. data)
+		PYATV.WSDataReceived(data)
+	end
+
+	PersistData["ATVSocket"]:SetProcessMessageFunction (pm)
+
+	local est = function (self)
+		dbg ('ws connection established')
+		PYATV.ConnectionState(true)
+	end
+
+	local offline = function (self)
+		dbg ('ws connection established')
+		PYATV.ConnectionState(false)
+	end
+
+	PersistData["ATVSocket"]:SetEstablishedFunction (est)
+	PersistData["ATVSocket"]:SetOfflineFunction (offline)
+
+	local closed = function (self)
+		dbg ('ws connection closed by remote host')
+		PYATV.ConnectionState(false)
+	end
+
+	PersistData["ATVSocket"]:SetClosedByRemoteFunction (closed)
+
+
+	PersistData["ATVSocket"]:Start ()
+
+end
+
+function PYATV.WSDataReceived(data)
+
+    dbg("---WS Data received---")
+
+    --array = JSON:decode(data)
+    
+    PYATV.ProcessData(data,"ws")
+
+end
+
+function PYATV.ConnectionState(state)
+
+    if (state) then
+	   state = "connected"
+    else
+	   state = "disconnected"
+    end
+
+    dbg("Websocket connection state changed: "..state)
+
+end
+
+function PYATV.ProcessData(data,source)
+
+    	array = JSON:decode(data)
+	
+	dbg("---Begin data process---")
+	dbg("Data array: "..data)
+
+	if (array["device_state"] ~= "idle") then
+		imageURL = "http://"..Properties["Server IP"]..":"..Properties["Server Port"].."/art/"..Properties["Device ID"].."/art.png"
+		
+		if (array["hash"] ~= nil) then
+		     hash = C4:Base64Encode(array["datetime"])
+			imageURL = imageURL.."?"..hash
+			array["image"] = C4:Base64Encode(imageURL)
+		end
+		
+		array["ImageUrl"] = imageURL
+	end
+	if (array["app_id"]) then
+		array["app"] = APPLE_BUNDLES["name"][array["app_id"]] or array["app"] or nil
+		if (array["app"] == nil) then
+		  for name,id in pairs(APPLE_TV) do
+			 if (id == array["app_id"]) then
+				array["app"] = name
+			 end
+		  end
+	     end
+	end
+	if (init == "new") then
+		PYATV.preMakeImageList(array)
+	end
+	if (array["state"]) then
+		array["device_state"] = array["state"]
+	end
+	if (source == "proxy" or source == "ws") then
+		dbg ("Media request from "..source)
+		UpdateMediaInfo(array)
+		UpdateQueue(array)
+		UpdateDashboard(array,true)
+		UpdateProgress(array)
+	end
+
+	if (array["device_state"]) and (array["media_type"]) then
+		C4:SetVariable("Play State", array["device_state"])
+		C4:SetVariable("Media Type", array["media_type"])
+	end
+	if (array["app"]) then
+		C4:SetVariable("Service", array["app_id"])
+	end
+	dbg ("---Polling Complete---")
+
+
+end
+
 
 function PYATV.ScanDevices () -- ORIGINAL: scan_devices
     print ("---Scan Devices---")
@@ -376,73 +498,30 @@ function PYATV.pollMediaInfo (source, navId, roomId, seq) --pollMediaInfo
 		function(ticketId, strData, responseCode, tHeaders, strError)
 			if (strError == nil) then
 				--array = ConvertToArray(strData)
-				array = JSON:decode(strData)
-				--if (array["title"]) then
-				--	array["hash"] = C4:Base64Encode(array["title"])
-				--end
-				if (array["device_state"] ~= "idle") then
-					imageURL = "http://"..Properties["Server IP"]..":"..Properties["Server Port"].."/art/"..Properties["Device ID"].."/art.png"
-					array["ImageUrl"] = imageURL
-					if (array["hash"] ~= nil) then
-						array["image"] = C4:Base64Encode(imageURL.."?"..C4:Base64Encode(array["hash"]))
-					end
-				--else
-				--	array["image"] = C4:Base64Encode("controller://driver/atv-remote/icons/default_cover_art.png")
-				end
-				if (array["app_id"]) then
-				    --dbg ("---ID & Name Match: "..array["app"])
-				    array["app"] = APPLE_BUNDLES["name"][array["app_id"]] or array["app"]
-				    --dbg ("---ID & Name Change to: "..APPLE_BUNDLES["name"][array["app_id"]])
-				end
-				if (init == "new") then
-					PYATV.preMakeImageList(array)
-				end
-				if (array["state"]) then
-					array["device_state"] = array["state"]
-				end
-				if (source == "proxy") then
-					dbg ("Media request from proxy")
-					UpdateMediaInfo(array)
-					UpdateQueue(array)
-					UpdateDashboard(array,true)
-					UpdateProgress(array)
-				end
-				if (device_array["hash"] == array["hash"]) then
-					dbg ("Arrays equal, not updating")
-				else
-					dbg ("Arrays not equal, updating")
-					if (init=="old") then
-					   dbg ("init: "..init)
-					   --dbg ("device array: "..device_array["title"].." array: "..array["title"])
-				     else
-					   dbg ("init: "..init)
-				     end
-					UpdateMediaInfo(array)
-					UpdateQueue(array)
-					UpdateDashboard(array,false)
-				end
-				if (device_array["position"] == array["position"]) then
-					dbg ("Progress equal, not updating")
-				else
-					dbg ("Progress not equal, updating")
-					UpdateProgress(array)
-					UpdateDashboard(array,false)
-				end
-				device_array = array
-				if (array["device_state"]) and (array["media_type"]) then
-					C4:SetVariable("Play State", array["device_state"])
-					C4:SetVariable("Media Type", array["media_type"])
-				end
-				if (array["app"]) then
-				    C4:SetVariable("Service", array["app_id"])
-				end
-				dbg ("---Polling Complete---")
-				init = "old"
+				PYATV.ProcessData(strData,source)
 			else
 				print("C4:urlGet() failed: "..strError)
 			end
 		end
 	)
+end
+
+function PYATV.MakeImageList(strData,array)
+
+    	a = strData:match("',%s(.*)")
+	if (a ~= nil) then
+		b = a:match("',%s(.*)")
+		c,d = b:match("([^,]+),([^,]+)")
+		d = d:sub(1, -2)
+		e = c:match("=(.*)")
+		f = d:match("=(.*)")
+		art_url = "http://"..Properties["Server IP"]..":"..Properties["Server Port"].."/art/"..Properties["Device ID"].."/art.png"
+		art_url = art_url.."?"..C4:Base64Encode(array["datetime"])
+		artwork_info["width"] = e
+		artwork_info["height"] = f
+		artwork_info["url"] = art_url
+     end
+
 end
 
 function PYATV.preMakeImageList(array) -- ORIGINAL: preMakeImageList
@@ -452,23 +531,7 @@ function PYATV.preMakeImageList(array) -- ORIGINAL: preMakeImageList
 	C4:urlGet(url, {}, false,
 		function(ticketId, strData, responseCode, tHeaders, strError)
 			if (strError == nil) then
-				a = strData:match("',%s(.*)")
-				if (a ~= nil) then
-					b = a:match("',%s(.*)")
-					c,d = b:match("([^,]+),([^,]+)")
-					d = d:sub(1, -2)
-					e = c:match("=(.*)")
-					f = d:match("=(.*)")
-					art_url = "http://"..Properties["Server IP"]..":"..Properties["Server Port"].."/art/"..Properties["Device ID"].."/art.png"
-					art_url = art_url.."?"..C4:Base64Encode(array["hash"])
-					artwork_info["width"] = e
-					artwork_info["height"] = f
-					artwork_info["url"] = art_url
-				--else
-				--     artwork_info["width"] = 512
-				--	artwork_info["height"] = 512
-				--	artwork_info["url"] = "controller://driver/atv-remote/icons/default_cover_art.png"
-				end
+				PYATV.MakeImageList(strData,array)
 			else
 				print("C4:urlGet() failed: "..strError)
 			end
@@ -576,6 +639,7 @@ end
 
 function OnDriverInit ()
 	PYATV.ConnectDevice()
+	PYATV.ConnectWebsocket()
 	C4:AddVariable("Play State", "Not Playing", "STRING")
 	C4:AddVariable("Media Type", "Not Playing", "STRING")
 	C4:AddVariable("Service", "Not Playing", "STRING")
@@ -847,8 +911,10 @@ function ReceivedFromProxy (idBinding, strCommand, tParams)
 	if (idBinding == MSP_PROXY) then
 		if (strCommand == 'DEVICE_SELECTED') then
 			PYATV.pollMediaInfo ("proxy")
-			PYATV.RefreshInterval ("start")
+			--Using websockets. not needed
+			--PYATV.RefreshInterval ("start")
 			PYATV.ConnectDevice()
+			PYATV.ConnectedWebsocket()
 			MSP.ON (idBinding, strCommand, tParams, args)
 		elseif (strCommand == 'DEVICE_DESELECTED') then
 			-- Device is no longer needed in the room
@@ -873,7 +939,8 @@ function ReceivedFromProxy (idBinding, strCommand, tParams)
 			--UpdateQueue()
 		elseif (strCommand == 'OFF') then
 		     --Stop timer only when all respective rooms are off
-			PYATV.RefreshInterval ("stop")
+			--Using websockets. not needed
+			--PYATV.RefreshInterval ("stop")
 			C4:SetVariable("Service", "OFF")
 		end
 		if (MSP[strCommand] ~= nil) and (type(MSP[strCommand])=='function') then
@@ -1306,7 +1373,7 @@ function MakeImageList (iconInfo)
 	    if (iconInfo["url"]) and w and h then
 		    --print("START Make image list...URL: "..iconInfo["url"])
 		    --for _, size in ipairs(defaultSizes) do
-			    imageUrl = iconInfo["url"].."?"..C4:Base64Encode(os.date ('%x %X : '))
+			    imageUrl = iconInfo["url"]
 			    width = w
 			    height = h
 			    table.insert (image_list, '<image_list width="'..width..'" height="'..height..'">'..imageUrl..'</image_list>')
@@ -1499,7 +1566,7 @@ function UpdateQueue (data, navId, roomId, seq)
 		     i = i+1
 		     queue[i] = {title = 'Now Playing', isHeader = true}
 			i = i+1
-			queue[i] = {title = data["title"], subtitle = data["artist"], duration = duration, ImageUrl = artwork_info["url"]}
+			queue[i] = {title = data["title"], subtitle = data["artist"], duration = duration, ImageUrl = data["imageURL"]}
 	    end
 	    
 	    if data["app"] then
@@ -1512,7 +1579,8 @@ function UpdateQueue (data, navId, roomId, seq)
 		     else
 			    queue[i] = {title = data["app"], ImageUrl = data["app_icon"]}
 		     end
-
+	    else
+		  dbg("No app found. Data: "..dump(data))
 	    end
      else
 	   dbg ("data is nil, queue: "..dump(queue))
