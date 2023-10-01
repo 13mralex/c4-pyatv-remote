@@ -79,7 +79,9 @@ class DeviceListener(pyatv.interface.DeviceListener, pyatv.interface.PushListene
     def playstatus_update(self, updater, playstatus: pyatv.interface.Playing) -> None:
         clients = self.app["clients"].get(self.identifier, [])
         for client in clients:
-            asyncio.ensure_future(client.send_str(str(playstatus)))
+            atv = self.app["atv"].get(self.identifier)
+            status = output_playing(playstatus,atv.metadata.app)
+            asyncio.ensure_future(client.send_str(str(status)))
 
     def playstatus_error(self, updater, exception: Exception) -> None:
         pass
@@ -153,12 +155,11 @@ def getAppIcon(bundle_id):
     r = requests.get(url)
     r = r.content
     r = json.loads(r)
-    if r['resultCount'] is 0:
+    if r['resultCount'] == 0:
         result = ''
     else:
         result = r['results'][0]['artworkUrl512']
     return result
-
 
 @routes.get("/state/{id}")
 async def state(request):
@@ -244,16 +245,6 @@ async def remote_control(request, atv):
     except Exception as ex:
         return web.Response(text=f"Remote control command failed: {ex}")
     return web.Response(text="OK")
-    
-@routes.get("/set_volume/{id}/{level}")
-@web_command
-async def set_volume(request, atv):
-    try:
-        level = float(request.match_info["level"])
-        atv.audio.set_volume(level)
-    except Exception as ex:
-        return web.Response(text=f"Set volume command failed: {ex}")
-    return web.Response(text="OK")
 
 @routes.get("/remote_control/{id}/{command}/{action}")
 @web_command
@@ -271,6 +262,16 @@ async def remote_control(request, atv):
     except Exception as ex:
         return web.Response(text=f"Remote control command failed: {ex}")
     return web.Response(text=f"OK")
+
+@routes.get("/set_volume/{id}/{level}")
+@web_command
+async def set_volume(request, atv):
+    try:
+        level = float(request.match_info["level"])
+        atv.audio.set_volume(level)
+    except Exception as ex:
+        return web.Response(text=f"Set volume command failed: {ex}")
+    return web.Response(text="OK")
 
 @routes.get("/playing/{id}")
 @web_command
@@ -388,15 +389,15 @@ async def close_connection(request, atv):
 
 @routes.get("/ws/{id}")
 @web_command
-async def websocket_handler(request, pyatv):
+async def websocket_handler(request, atv):
     device_id = request.match_info["id"]
 
     ws = web.WebSocketResponse()
     await ws.prepare(request)
     request.app["clients"].setdefault(device_id, []).append(ws)
 
-    playstatus = await pyatv.metadata.playing()
-    await ws.send_str(str(playstatus))
+    status = output_playing(await atv.metadata.playing(), atv.metadata.app)
+    await ws.send_str(str(status))
 
     async for msg in ws:
         if msg.type == WSMsgType.TEXT:
