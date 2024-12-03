@@ -1,6 +1,6 @@
--- Copyright 2022 Snap One, LLC. All rights reserved.
+-- Copyright 2020 Wirepath Home Systems, LLC. All rights reserved.
 
-COMMON_TIMER_VER = 11
+COMMON_TIMER_VER = 10
 
 do	--Globals
 	Timer = Timer or {}
@@ -56,11 +56,6 @@ function SetTimer (timerId, delay, timerFunction, repeating)
 		timerFunction = nil
 	end
 
-	if (delay > ((2^31) - 1)) then
-		print ('Timer not created: ' .. tostring (timerId), 'delay exceeded max value (2^31 - 1)')
-		return
-	end
-
 	if (timerFunction == nil) then
 		if (type (_G [timerId]) == 'function') then
 			timerFunction = function (timer, skips)
@@ -75,12 +70,10 @@ function SetTimer (timerId, delay, timerFunction, repeating)
 	local _timer = function (timer, skips)
 		if (TimerFunctions [timer]) then
 			local success, ret = pcall (TimerFunctions [timer], timer, skips)
-			if (success == true) then
-				if (DEBUG_TIMER) then
+			if (DEBUG_TIMER) then
+				if (success == true) then
 					print ('Timer completed: ', timerId, ret)
-				end
-			elseif (success == false) then
-				if (DEBUG_TIMER) then
+				elseif (success == false) then
 					print ('Timer Regular Expire Lua error: ', timerId, ret)
 				end
 			end
@@ -97,24 +90,15 @@ function SetTimer (timerId, delay, timerFunction, repeating)
 		print ('Timer created: ' .. tostring (timerId))
 	end
 
-	local timer
+	local timer = C4:SetTimer (delay, _timer, (repeating == true))
+	TimerFunctions [timer] = timerFunction
 
-	local success, ret = pcall (C4.SetTimer, C4, delay, _timer, (repeating == true))
-	if (success) then
-		timer = ret
-	else
-		print ('Timer creation Lua error: ', timerId, ret)
-		return
-	end
-
-	if (timer) then
-		TimerFunctions [timer] = timerFunction
-
-		if (type (timerId) == 'string') then
+	if (type (timerId) == 'string') then
+		if (timerId and timer) then
 			Timer [timerId] = timer
-		else
-			Timer [timer] = timer
 		end
+	else
+		Timer [timer] = timer
 	end
 	return timer
 end

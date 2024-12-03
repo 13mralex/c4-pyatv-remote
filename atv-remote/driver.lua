@@ -94,6 +94,7 @@ function PYATV.ConnectWebsocket()
 
 	local offline = function(self)
 		dbg('ws connection offline')
+		WS:delete()
 		dbg("Attempt reconnect in 5 seconds...")
 		C4:SetTimer(5000, function(timer)
 			PYATV.ConnectWebsocket()
@@ -103,6 +104,7 @@ function PYATV.ConnectWebsocket()
 
 	local closed = function(self)
 		dbg('ws connection closed by remote host')
+		WS:delete()
 	end
 
 	WS:SetProcessMessageFunction(pm)
@@ -110,7 +112,7 @@ function PYATV.ConnectWebsocket()
 	WS:SetOfflineFunction(offline)
 	WS:SetClosedByRemoteFunction(closed)
 
-	WS:Start ()
+	WS:Start()
 
 end
 
@@ -119,7 +121,11 @@ function PYATV.WSDataReceived(data)
 
     jsonData = JSON:decode(data)
 	if (jsonData.connected == false) then
-		PYATV.ConnectDevice()
+		dbg("WS reports ATV is offline, attempting reconnect in 10 seconds...")
+		C4:SetTimer(10000, function(timer)
+			PYATV.ConnectDevice()
+			timer:Cancel()
+		end, true)
 	else
     	PYATV.MediaCallback(jsonData,nil,"ws")
 	end
@@ -160,6 +166,10 @@ function PYATV.UrlCall(uri, callback, method, data, callbackData)
 						local jsonData = JSON:decode(strData)
 						if (jsonData["status"]) then
 							PYATV.UpdateStatus(jsonData["status"])
+						elseif (jsonData["connected"]~=nil) then
+							if (not jsonData["connected"]) then
+								PYATV.ConnectDevice()
+							end
 						end
 						if (callback) then
 							callback(jsonData,callbackData)
@@ -193,6 +203,10 @@ function PYATV.UrlCall(uri, callback, method, data, callbackData)
 						local jsonData = JSON:decode(strData)
 						if (jsonData["status"]) then
 							PYATV.UpdateStatus(jsonData["status"])
+						elseif (jsonData["connected"]~=nil) then
+							if (not jsonData["connected"]) then
+								PYATV.ConnectDevice()
+							end
 						end
 						if (callback) then
 							callback(jsonData,callbackData)
@@ -568,7 +582,7 @@ function PYATV.GenerateQueue(idBinding,tParams,data)
 	
 	if (appName) then
 		q = q.."<item><title>Service</title><isHeader>true</isHeader></item>"
-		q = q.."<item><title>"..XMLEncode(data.app.name).."</title>"
+		q = q.."<item><title>"..XMLEncode(appName).."</title>"
 		q = q.."<image_list>"..appIcon.."</image_list></item>"
 	end
 
@@ -674,6 +688,9 @@ function AppSelection (currentValue) 	-- CUSTOM_SELECT from Actions and Programm
 end
 
 function OnDriverDestroyed ()
+	if (WS) then
+		WS:delete()
+	end
 	KillAllTimers()
 end
 

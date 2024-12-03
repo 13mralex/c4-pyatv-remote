@@ -128,7 +128,7 @@ class PYATV:
                 await self.atv_app.add_atv(atv,id)
                 resp.media = {"status":"Connection successful!"}
             else:
-                resp.media = {"status":"Connection failed, try pairing again."}
+                resp.media = {"status":"Connection failed, try pairing again.","connected":False}
         except Exception as e:
             logging.exception("Connection failed")
             resp.media = {"status":f"Connection failed: {str(e)}"}
@@ -181,20 +181,21 @@ class Listener(pyatv.interface.DeviceListener, pyatv.interface.PushListener):
         self.update_callback = update_callback
 
     def connection_lost(self, exception: Exception) -> None:
-        self._remove()
+        logging.error(f"pyatv reports connection lost for {self.id}")
+        self.send_msg({"connected":False})
 
     def connection_closed(self) -> None:
-        self._remove()
-
-    def _remove(self):
-        #self.list.remove(self)
-        pass
+        logging.error(f"pyatv reports connection closed for {self.id}")
+        self.send_msg({"connected":False})
 
     def playstatus_update(self, updater, playstatus):
-        asyncio.ensure_future(self.update_callback(playstatus,self.atv,self.id))
+        self.send_msg(playstatus)
 
     def playstatus_error(self, updater, exception: Exception):
-        pass
+        logging.exception(f"pyatv reports playstatus error for {self.id}")
+
+    def send_msg(self,msg):
+        asyncio.ensure_future(self.update_callback(msg,self.atv,self.id))
 
 class ATV:
     def __init__(self):
@@ -202,6 +203,7 @@ class ATV:
         self.atv_list = {}
         self.app_icon_store = {}
         self.ws_clients = []
+        self.failed = {"status":"ATV not connected","connected":False}
 
     async def on_websocket_ws(self,req,ws,id):
         logging.info(f"WS request for {id}")
@@ -225,7 +227,7 @@ class ATV:
                 payload = await ws.receive_media()
                 logging.info(f"WS Inbound: {payload}")
             except WebSocketDisconnected:
-                logging.exception("WS Disconnected")
+                logging.info("WS Disconnected")
                 self.ws_clients.remove(_ws)
                 return
         
@@ -254,8 +256,7 @@ class ATV:
 
                 resp.media = {"status":"OK"}
             else:
-                resp.media = {"status":"ATV not found or connected."}
-
+                resp.media = self.failed
         except Exception as e:
             resp.media = {"status":f"Failed: {str(e)}"}
         
@@ -340,34 +341,39 @@ class ATV:
             data = await self.parse_metadata(atv)
             resp.media = data
         else:
-            resp.media = {"status":"ATV not connected"}
+            resp.media = self.failed
 
     async def add_atv(self,atv:pyatv.interface.AppleTV,id):
         logging.info(f"Adding ATV...")
         listener = Listener(atv,id,self.atv_listener_callback)
 
-        #atv.listener = listener
+        atv.listener = listener
         atv.push_updater.listener = listener
         atv.push_updater.start()
         self.atv_list[id] = listener
 
     async def atv_listener_callback(self,data,atv,id):
-        data = await self.parse_metadata(atv,data)
+
+        msg = {}
+        logging.debug(f"Listener callback: {data}")
+
+        if type(data)==dict:
+            msg = data
+        else: 
+            msg = await self.parse_metadata(atv,data)
+
         for client in self.ws_clients:
-            logging.info(f"Client: {client}")
             if id == client["id"]:
-                await client["ws"].send_media(data)
+                await client["ws"].send_media(msg)
 
     async def parse_metadata(self,atv:pyatv.interface.AppleTV,data=None):
         metadata = {}
 
-        if not data:
-            if not atv:
-                return {"status":"ATV not connected","connected":False}
-            media = await atv.metadata.playing()
-            metadata = media
-        else:
-            metadata = data
+        try:
+            metadata = await atv.metadata.playing()
+        except:
+            logging.error(f"Returning failed connection to WS")
+            return self.failed
             
         art = await atv.metadata.artwork()
 
@@ -418,7 +424,12 @@ class ATV:
     def get_app(self,app):
 
         if not app:
-            return None
+            a = {
+                "name": None,
+                "id": None,
+                "icon": None
+            }
+            return a
 
         a = {}
         appId = app.identifier

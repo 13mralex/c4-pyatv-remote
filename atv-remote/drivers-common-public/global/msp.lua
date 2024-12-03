@@ -1,6 +1,6 @@
--- Copyright 2024 Snap One, LLC. All rights reserved.
+-- Copyright 2022 Snap One, LLC. All rights reserved.
 
-COMMON_MSP_VER = 116
+COMMON_MSP_VER = 96
 
 JSON = require ('drivers-common-public.module.json')
 
@@ -25,8 +25,6 @@ do	--Globals
 	RoomSettings = RoomSettings or {}
 
 	Navigator = Navigator or {}
-
-	-- NavigatorSerializedArgs = {}
 
 	MAX_SEARCH = 20
 
@@ -78,7 +76,7 @@ do	--Setup Metrics
 	MetricsMSP = Metrics:new ('dcp_msp', COMMON_MSP_VER)
 end
 
-function OnDriverDestroyed (driverInitType)
+function OnDriverDestroyed ()
 	C4:UnregisterSystemEvent (C4SystemEvents.OnPIP, 0)
 
 	UnregisterVariableListener (C4_DIGITAL_AUDIO, DIGITAL_AUDIO_VARS.ROOM_QUEUE_SETTINGS)
@@ -89,7 +87,7 @@ function OnDriverDestroyed (driverInitType)
 	KillAllTimers ()
 
 	if (OnDriverDestroyedTasks and type (OnDriverDestroyedTasks) == 'function') then
-		local success, ret = pcall (OnDriverDestroyedTasks, driverInitType)
+		local success, ret = pcall (OnDriverDestroyedTasks)
 		if (success) then
 			if (ret) then
 			end
@@ -99,10 +97,10 @@ function OnDriverDestroyed (driverInitType)
 	end
 end
 
-function OnDriverInit (driverInitType)
+function OnDriverInit ()
 	C4:RegisterSystemEvent (C4SystemEvents.OnPIP, 0)
 	if (OnDriverInitTasks and type (OnDriverInitTasks) == 'function') then
-		local success, ret = pcall (OnDriverInitTasks, driverInitType)
+		local success, ret = pcall (OnDriverInitTasks)
 		if (success) then
 			if (ret) then
 			end
@@ -112,15 +110,8 @@ function OnDriverInit (driverInitType)
 	end
 end
 
-function OnDriverLateInit (driverInitType)
-	local minimumVersion
-	if (C4.GetDriverConfigInfo) then
-		minimumVersion = C4:GetDriverConfigInfo ('minimum_os_version')
-		if (minimumVersion == '') then
-			minimumVersion = nil
-		end
-	end
-	if (minimumVersion and not (VersionCheck (minimumVersion))) then
+function OnDriverLateInit ()
+	if (not C4.GetDriverConfigInfo or not (VersionCheck (C4:GetDriverConfigInfo ('minimum_os_version')))) then
 		local errtext = {
 			'DRIVER DISABLED - ',
 			C4:GetDriverConfigInfo ('model'),
@@ -157,14 +148,8 @@ function OnDriverLateInit (driverInitType)
 			elseif (var.varType == 'NUMBER') then default = 0
 			end
 		end
-		local readOnly = true
-		if (type (var.readOnly) == 'boolean') then
-			readOnly = var.readOnly
-		end
-		local hidden = false
-		if (type (var.hidden) == 'boolean') then
-			hidden = var.hidden
-		end
+		local readOnly = (var.readOnly ~= nil and var.readOnly) or true
+		local hidden = (var.hidden ~= nil and var.hidden) or false
 		C4:AddVariable (var.name, default, var.varType, readOnly, hidden)
 	end
 
@@ -203,7 +188,8 @@ function OnDriverLateInit (driverInitType)
 	SUPPORTS_GAPLESS = VersionCheck ('2.10.0')
 	SUPPORTS_CUSTOM_DASH = VersionCheck ('3.0.0')
 	SUPPORTS_DEFAULT_AND_ACTIONS = VersionCheck ('3.0.0')
-	SUPPORTS_SEEK_ABSOLUTE = VersionCheck ('3.3.1')
+
+	USER_AGENT = 'Control4/' .. C4:GetVersionInfo ().version .. '/' .. C4:GetDriverConfigInfo ('model') .. '/' .. C4:GetDriverConfigInfo ('version')
 
 	HomeTabId = 'Library'
 	HomeScreenId = 'LibraryScreen'
@@ -219,7 +205,7 @@ function OnDriverLateInit (driverInitType)
 	end
 
 	if (OnDriverLateInitTasks and type (OnDriverLateInitTasks) == 'function') then
-		local success, ret = pcall (OnDriverLateInitTasks, driverInitType)
+		local success, ret = pcall (OnDriverLateInitTasks)
 		if (success) then
 			if (ret) then
 			end
@@ -470,28 +456,6 @@ RFP [MSP_PROXY] = function (idBinding, strCommand, tParams, args)
 		local roomId = tonumber (tParams.ROOMID) or tonumber (tParams.ROOM_ID)
 		return (SkipRev (roomId))
 
-	elseif (strCommand == 'SEEK') then
-		local roomId = tonumber (tParams.ROOMID) or tonumber (tParams.ROOM_ID)
-		local pos = tonumber (tParams.POSITION)
-		local seekType = tParams.TYPE
-		return (Seek (roomId, pos, seekType))
-
-	elseif (strCommand == 'SCAN_FWD') then
-		local roomId = tonumber (tParams.ROOMID) or tonumber (tParams.ROOM_ID)
-		local pos = 15
-		local seekType = 'relative'
-		return (Seek (roomId, pos, seekType))
-
-	elseif (strCommand == 'SCAN_REV') then
-		local roomId = tonumber (tParams.ROOMID) or tonumber (tParams.ROOM_ID)
-		local pos = -15
-		local seekType = 'relative'
-		return (Seek (roomId, pos, seekType))
-
-	elseif (string.find (strCommand, '^NUMBER_')) then
-		-- TODO
-		return '<ret><handled>true</handled></ret>'
-
 	elseif (strCommand == 'REPEAT_ON') then
 		local roomId = tonumber (tParams.ROOM_ID)
 		local qId = GetQueueIDByRoomID (roomId)
@@ -511,13 +475,6 @@ RFP [MSP_PROXY] = function (idBinding, strCommand, tParams, args)
 		local roomId = tonumber (tParams.ROOM_ID)
 		local qId = GetQueueIDByRoomID (roomId)
 		QueueClearShuffle (qId)
-
-	elseif (strCommand == 'GET_CONTAINER_INFO') then
-		local keyToUpdate = tParams.keyToUpdate
-		local containerId = tParams.containerId
-		local containerType = tParams.containerType
-		local rooms = tParams.rooms
-		GetContainerInfo (containerId, containerType, keyToUpdate, rooms)
 
 	elseif (not (navId) and RFP) then
 		strCommand = string.gsub (strCommand, '%s+', '_')
@@ -542,14 +499,6 @@ RFP [MSP_PROXY] = function (idBinding, strCommand, tParams, args)
 
 		nav.roomId = tonumber (tParams.ROOMID)
 		local seq = tParams.SEQ
-
-		if (NavigatorSerializedArgs) then
-			for arg, serialized in pairs (NavigatorSerializedArgs) do
-				if (args [arg] and serialized) then
-					args [arg] = Deserialize (args [arg])
-				end
-			end
-		end
 
 		local success, ret = pcall (cmd, nav, idBinding, seq, args)
 
@@ -611,10 +560,6 @@ function SendEvent (idBinding, navId, roomId, name, args)
 		data = XMLTag (nil, args, false, false)
 	end
 
-	if (type (roomId) == 'table') then
-		roomId = table.concat (roomId, ',')
-	end
-
 	local tParams = {
 		NAVID = navId,
 		ROOMS = roomId,
@@ -641,7 +586,7 @@ function NetworkError (strError)
 end
 
 -- Queue functions
-function AddTracksToQueue (trackList, roomId, playOption, radioInfo, radioSkips, containerInfo)
+function AddTracksToQueue (trackList, roomId, playOption, radioInfo, radioSkips)
 	if (CheckRoomHasDigitalAudio (roomId) == false) then
 		dbg ('Tried to create digital audio queue in room with no Digital Audio:', roomId)
 		--return
@@ -764,13 +709,6 @@ function AddTracksToQueue (trackList, roomId, playOption, radioInfo, radioSkips,
 			},
 		}
 
-		local _timer = function (timer)
-			MetricsMSP:SetCounter ('QueueTimedOut')
-			CancelTimer (SongQs [roomId].TimeOutTimer)
-			SongQs [roomId] = nil
-		end
-		SongQs [roomId].TimeOutTimer = SetTimer (SongQs [roomId].TimeOutTimer, 30 * ONE_SECOND, _timer)
-
 		if (playOption == 'SHUFFLE') then
 			SongQs [roomId].CurrentTrack = math.random (#trackList)
 			QueueSetShuffle (roomId)
@@ -779,43 +717,6 @@ function AddTracksToQueue (trackList, roomId, playOption, radioInfo, radioSkips,
 
 		MetricsMSP:SetCounter ('NewQueueAttempt')
 		MetricsMSP:SetGauge ('QueueCount', GetTableSize (SongQs))
-	end
-
-	if (containerInfo) then
-		local thisQ = SongQs [qId]
-		if (thisQ) then
-			if (RECENTLY_PLAYED_AGENT) then
-				local key
-				if (thisQ.RecentlyPlayedKey) then
-					key = thisQ.RecentlyPlayedKey
-				end
-				local rooms = GetRoomMapByQueueID (qId)
-				if (#rooms == 0) then
-					rooms = roomId
-				else
-					rooms = table.concat (rooms, ',')
-				end
-				local itemInfo = {
-					keyToUpdate = nil,
-					driverId = PROXY_ID,
-					info = {
-						container = {
-							id = containerInfo.id,
-							itemType = containerInfo.itemType,
-							title = containerInfo.title,
-							subtitle = containerInfo.subtitle,
-							image = containerInfo.image,
-						},
-						driverId = PROXY_ID,
-					},
-					rooms = rooms,
-				}
-				key = C4:SendToDevice (RECENTLY_PLAYED_AGENT, 'SetHistoryItem', {itemInfo = Serialize (itemInfo)})
-				if (key) then
-					thisQ.RecentlyPlayedKey = key
-				end
-			end
-		end
 	end
 
 	if (playNow) then
@@ -1146,88 +1047,7 @@ function Skip (roomId, increment)
 	end
 end
 
-function Seek (roomId, pos, seekType)
-	if (not (roomId and pos and seekType)) then
-		return
-	end
-
-	local qId = GetQueueIDByRoomID (roomId)
-
-	local thisQ = SongQs [qId]
-
-	if (not thisQ) then
-		print ('Cannot seek, no queue')
-		return
-	end
-
-	local elapsed = thisQ.CurrentTrackElapsed
-	local duration = thisQ.CurrentTrackDuration
-
-	if (not (elapsed and duration)) then
-		return
-	end
-
-	if (not (SUPPORTS_SEEK_ABSOLUTE)) then
-		if (seekType == 'absolute') then
-			pos = pos - elapsed
-			seekType = 'relative'
-		elseif (seekType == 'percent') then
-			local target = math.floor (duration * (pos / 100))
-			pos = target - elapsed
-			seekType = 'relative'
-		end
-	end
-
-	local target
-	if (seekType == 'absolute') then
-		target = pos
-	elseif (seekType == 'relative') then
-		target = elapsed + pos
-	elseif (seekType == 'percent') then
-		target = math.floor (duration * (pos / 100))
-	end
-
-	if (not target) then
-		print ('Cannot seek, could not calculate target position')
-		return
-	end
-
-	if (target < 0) then
-		print ('Cannot seek, target is before start of track')
-		return
-	end
-
-	if (target > duration) then
-		print ('Cannot seek, target is after end of track')
-		return
-	end
-
-	if (roomId and pos and seekType) then
-		local _args = {
-			ROOM_ID = roomId,
-			POSITION = pos * 1000, -- convert seconds to ms
-			TYPE = seekType,
-		}
-
-		C4:SendToDevice (C4_DIGITAL_AUDIO, 'SEEK', _args)
-
-		if (seekType == 'absolute') then
-			thisQ.CurrentTrackElapsed = pos
-		elseif (seekType == 'relative') then
-			thisQ.CurrentTrackElapsed = thisQ.CurrentTrackElapsed + pos
-		elseif (seekType == 'percent') then
-			thisQ.CurrentTrackElapsed = math.floor (thisQ.CurrentTrackDuration * (pos / 100))
-		end
-
-		UpdateProgress (qId)
-
-		return '<ret><handled>true</handled></ret>'
-	end
-end
-
 function RegisterRooms ()
-	RECENTLY_PLAYED_AGENT = next (C4:GetDevicesByC4iName ('recentlyplayed-agent.c4z'))
-
 	RoomIDs = C4:GetDevicesByC4iName ('roomdevice.c4i')
 	RoomIDSources = {}
 	RoomIDPlayingSources = {}
@@ -1371,7 +1191,7 @@ function GetMasterRoom (deviceId)
 	return nil, {}
 end
 
-function JoinRoomToSession (roomId, qId, extras)
+function JoinRoomToSession (roomId, qId)
 	if (CheckRoomHasDigitalAudio (roomId) == false) then
 		dbg ('Tried to join digital audio session with room with no Digital Audio:', roomId)
 		--return
@@ -1390,19 +1210,10 @@ function JoinRoomToSession (roomId, qId, extras)
 	local _, roomQueue = GetQueueIDByRoomID (roomId)
 
 	if (sessionQueue.ownerId) then
-		if (sessionQueue ~= roomQueue) then
-			local roomList = roomId
+		if (sessionQueue~= roomQueue) then
 			local args = {
 				ROOM_ID = sessionQueue.ownerId,
-				ROOM_ID_LIST = roomList,
-			}
-			C4:SendToDevice (C4_DIGITAL_AUDIO, 'ADD_ROOMS_TO_SESSION', args)
-		end
-		if (extras and #extras > 0) then
-			local roomList = roomId
-			local args = {
-				ROOM_ID = sessionQueue.ownerId,
-				ROOM_ID_LIST = extras,
+				ROOM_ID_LIST = roomId,
 			}
 			C4:SendToDevice (C4_DIGITAL_AUDIO, 'ADD_ROOMS_TO_SESSION', args)
 		end
@@ -1469,15 +1280,6 @@ function MakeList (response, collection, options)
 				end
 			end
 		end
-
-		if (NavigatorSerializedArgs) then
-			for arg, serialized in pairs (NavigatorSerializedArgs) do
-				if (item [arg] and serialized) then
-					item [arg] = Serialize (item [arg])
-				end
-			end
-		end
-
 		table.insert (list, XMLTag ('item', item))
 	end
 
@@ -1508,30 +1310,6 @@ function UpdateMediaInfo (qId)
 			QUEUEID = qId,
 			}
 		C4:SendToProxy (MSP_PROXY, 'UPDATE_MEDIA_INFO', args, 'COMMAND', true)
-
-		--[[
-		if (thisQ.RecentlyPlayedKey and RECENTLY_PLAYED_AGENT) then
-			local rooms = GetRoomMapByQueueID (qId)
-			rooms = table.concat (rooms, ',')
-
-			local itemInfo = {
-				keyToUpdate = thisQ.RecentlyPlayedKey,
-				driverId = PROXY_ID,
-				info = {
-					track = {
-						id = thisTrack.id,
-						title = thisTrack.title,
-						subtitle = thisTrack.artist,
-						image = thisTrack.image,
-					},
-					driverId = PROXY_ID,
-				},
-				rooms = rooms,
-			}
-
-			C4:SendToDevice (RECENTLY_PLAYED_AGENT, 'SetHistoryItem', {itemInfo = Serialize (itemInfo)})
-		end
-		--]]
 	end
 end
 
@@ -1571,20 +1349,12 @@ function UpdateQueue (qId, options)
 
 		local list = {}
 		for i = start, finish do
-			local item = CopyTable (thisQ.Q [i])
+			local item = thisQ.Q [i]
 
 			if (SUPPORTS_DEFAULT_AND_ACTIONS) then
 				if (item.default_action == nil) then
 					if (string.find (item.actions_list or '', '^QueueSelect')) then
 						item.default_action = 'QueueSelect'
-					end
-				end
-			end
-
-			if (NavigatorSerializedArgs) then
-				for arg, serialized in pairs (NavigatorSerializedArgs) do
-					if (item [arg] and serialized) then
-						item [arg] = Serialize (item [arg])
 					end
 				end
 			end
@@ -1642,7 +1412,6 @@ function UpdateProgress (qId)
 					length = 1,
 					offset = 1,
 					label = GetTimeString (thisQ.CurrentTrackElapsed),
-					canSeek = false,
 				}
 			else
 				local elapsed = GetTimeNumber (thisQ.CurrentTrackElapsed)
@@ -1656,15 +1425,14 @@ function UpdateProgress (qId)
 					length = GetTimeNumber (thisQ.CurrentTrackDuration),
 					offset = GetTimeNumber (thisQ.CurrentTrackElapsed),
 					label = elapsedString .. ' / -' .. remainingString,
-					canSeek = SUPPORTS_SEEK_ABSOLUTE,
 				}
+				SendEvent (MSP_PROXY, nil, rooms, 'ProgressChanged', args)
 			end
 		else
 			args = {
 				length = 0,
 				offset = 0,
 				label = '',
-				canSeek = false,
 			}
 		end
 
@@ -1804,7 +1572,6 @@ function OnQueueStateChanged (idBinding, tParams)
 		for _, roomId in ipairs (GetRoomMapByQueueID (qId)) do
 			if (SongQs [roomId]) then
 				SongQs [qId] = SongQs [roomId]
-				SongQs [roomId].TimeOutTimer = CancelTimer (SongQs [roomId].TimeOutTimer)
 				SongQs [roomId] = nil
 				thisQ = SongQs [qId]
 				thisQ.Q._parent = thisQ
@@ -1919,8 +1686,6 @@ function OnQueueStreamStatusChanged (idBinding, tParams)
 			end
 			if (statusChange or status.status ~= 'OK_playing') then
 				MetricsMSP:SetCounter ('QueueStreamStatus_' .. status.status)
-
-				LogPlayEvent ('queue_status', qId, status.status)
 			end
 		end
 	end
@@ -2099,13 +1864,6 @@ function LogPlayEvent (source, qId, event, nextTrack)
 		elseif (event == 'END') then
 		elseif (event == 'DELETED') then
 		end
-
-	elseif (source == 'queue_status') then
-		if (event == 'OK_addmed') then
-		elseif (event == 'OK_playing') then
-		elseif (event == 'ERR_ResourceNotFound') then
-		elseif (event == 'ERR_General') then
-		end
 	end
 
 	-- thisQ.trackStartEvented and thisQ.trackStopEvented useful here
@@ -2146,14 +1904,6 @@ function SelectDefaultItemInRoom (roomId)
 end
 
 function SelectMediaDBItemInRoom (itemId, roomId)
-end
-
-function GetContainerInfo (containerId, containerType, keyToUpdate, rooms)
-	if (not (containerId and containerType and keyToUpdate)) then
-		return
-	end
-
-	print ('GetContainerInfo: Unexpected: ', containerId, containerType)
 end
 
 -----------------
@@ -2367,16 +2117,10 @@ function Navigator:CancelAuthenticationInformation (idBinding, seq, args)
 		end
 	end
 
-	if (APIAuth) then
-		if (APIAuth.Timer.CheckState) then
-			APIAuth.Timer.CheckState = CancelTimer (APIAuth.Timer.CheckState)
-		end
-		if (APIAuth.Timer.GetCodeStatusExpired) then
-			APIAuth.Timer.GetCodeStatusExpired = CancelTimer (APIAuth.Timer.GetCodeStatusExpired)
-		end
+	CancelTimer (APIAuth.Timer.CheckState)
+	CancelTimer (APIAuth.Timer.GetCodeStatusExpired)
 
-		APIAuth:setLink ('')
-	end
+	UpdateAPIAuthLink ('')
 
 	return ({NextScreen = '#home'})
 end
@@ -2452,67 +2196,16 @@ function Navigator:ConfirmLogOut (idBinding, seq, args)
 	return ({NextScreen = '#home'})
 end
 
-function Navigator:GetSettings (idBinding, seq, args)
-	local settings = {}
-
-	for funcName, func in pairs (Navigator) do
-		local settingName = string.match (funcName, 'GetSettings_(%w+)')
-		if (settingName) then
-			local success, settingValue = pcall (func, self)
-			if (success) then
-				settings [settingName] = settingValue
-			end
-		end
-	end
-
-	local settingsXML = XMLTag (nil, settings)
-	return {Settings = settingsXML}
-end
-
 function Navigator:SettingChanged (idBinding, seq, args)
-	local success, ret
-
-	if (Navigator ['SettingChanged_' .. args.PropertyName] and type (Navigator ['SettingChanged_' .. args.PropertyName]) == 'function') then
-		success, ret = pcall (Navigator ['SettingChanged_' .. args.PropertyName], self, args.Value)
+	local value = args.Value
+	if (args.PropertyName == 'password') then
+		value = C4:Encrypt ('AES-256-CBC', C4:GetDriverConfigInfo ('model'), nil, value, AES_ENC_DEFAULTS)
 	end
-	if (success == true) then
-		return (ret)
-	elseif (success == false) then
-		MetricsHandler:SetCounter ('Error_SettingChanged')
-		print ('SettingChanged error: ', ret, args.PropertyName, args.Value)
-	end
-end
-
-function Navigator:GetSettings_username ()
-	local username = ''
-	if (Select (self, 'AuthSettings', 'username')) then
-		username = self.AuthSettings.username
-	end
-	return username
-end
-
-function Navigator:SettingChanged_username (value)
-	self.AuthSettings.username = value
+	self.AuthSettings [args.PropertyName] = value
 	return ('')
 end
 
-function Navigator:GetSettings_password ()
-	local password = ''
-	if (Select (self, 'AuthSettings', 'password')) then
-		password = C4:Decrypt ('AES-256-CBC', C4:GetDriverConfigInfo ('model'), nil, self.AuthSettings.password, AES_DEC_DEFAULTS)
-	end
-	return password
-end
-
-function Navigator:SettingChanged_password (value)
-	local enc = C4:Encrypt ('AES-256-CBC', C4:GetDriverConfigInfo ('model'), nil, value, AES_ENC_DEFAULTS)
-	if (enc) then
-		self.AuthSettings.password = value
-	end
-	return ('')
-end
-
-function Navigator:GetSettings_status ()
+function Navigator:GetSettings (idBinding, seq, args)
 	local status
 	if (LOGGED_IN == true) then
 		status = 'Logged In'
@@ -2521,7 +2214,14 @@ function Navigator:GetSettings_status ()
 	else
 		status = 'Logged Out'
 	end
-	return status
+	local username = self.AuthSettings.username or ''
+	local password = ''
+	if (self.AuthSettings.password) then
+		password = C4:Decrypt ('AES-256-CBC', C4:GetDriverConfigInfo ('model'), nil, self.AuthSettings.password, AES_DEC_DEFAULTS)
+	end
+
+	local settings = XMLTag ('username', username) .. XMLTag ('password', password) .. XMLTag ('status', status)
+	return {Settings = settings}
 end
 
 function Navigator:GetSearchHistory (idBinding, seq, args)
