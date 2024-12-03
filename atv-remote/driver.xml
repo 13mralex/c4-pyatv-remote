@@ -241,7 +241,7 @@
       </command>
       <command>
         <name>Refresh Connection</name>
-        <description>Refresh connection with ATV</description>
+        <description>Refresh connection on NAME</description>
       </command>
     </commands>
     <actions>
