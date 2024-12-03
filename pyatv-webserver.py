@@ -494,7 +494,7 @@ app.add_route("/info/{id}",pyatv_atv,suffix="info")
 app.add_route("/ws/{id}",pyatv_atv,suffix="ws")
 
 async def main():
-    config = uvicorn.Config("pyatv-web:app",host="0.0.0.0", port=8080, log_level="error")
+    config = uvicorn.Config("pyatv-webserver:app",host="0.0.0.0", port=8080, log_level="info")
     server = uvicorn.Server(config)
     await server.serve()
 
