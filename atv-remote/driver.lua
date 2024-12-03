@@ -488,7 +488,7 @@ function PYATV.GenerateMediaInfo(data)
 
 	local media = data.media
 
-	local imgUrl = nil
+	local imgUrl = ""
 
 	if (data.media.artwork) then
 		imgUrl = "http://"..Properties["Server Address"].."/artwork/"..PersistData.DeviceID.."/art.png?"..os.time() or ""
@@ -549,7 +549,7 @@ function PYATV.GenerateQueue(idBinding,tParams,data)
 
 	local title = data.media.title
 	local artist = data.media.artist
-	local imgUrl = nil
+	local imgUrl = ""
 
 	if (data.media.artwork) then
 		imgUrl = "http://"..Properties["Server Address"].."/artwork/"..PersistData.DeviceID.."/art.png?"..os.time() or ""
