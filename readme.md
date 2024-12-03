@@ -1,4 +1,5 @@
-﻿# Apple TV IP Remote Control (pyatv)
+﻿
+# Apple TV IP Remote Control (pyatv)
 
 ## Features
 - Virtually no latency for remote commands
@@ -18,48 +19,27 @@
   - Buttons can be customized in Composer
 - Universal MiniApp support
   - Launch apps on Apple TV programmatically or via MiniApps
-  - Major streaming services are supported natively
-    - Custom MiniApps can be added in the driver.lua file
 ## Known Issues
-- SR260 Remotes may display an hourglass icon when choosing from Watch menu
-  - Workaround: Press a different experience button (such as List) and back out
-- iOS app will select previously selected media device (Watch or Listen) rather than the Apple TV itself
-  - Workaround: Launch via MiniApps, otherwise no solution; all other devices work as expected
+- iOS app: inconsistent behavior when trying to start from "Watch"
+	- When selecting the device from the "Watch" menu, it will trigger a "Listen" action instead
+	- A hot fix has been applied to sidestep this issue, forcing "Watch" after an app is launched or user selected
 ## Preparing the Linux Environment
-·	Ensure Python3 is installed with pip
-
-·	Install pyatv
-
-·   `pip3 install pyatv`
-
-·	Verify installation
-
-·	`atvremote --version`
-
-·	Copy the pyatv-webserver.py to your Linux environment.
-
-·	Run the Webserver Python script in a screen or background process of your choice:
-
-·	`python3 pyatv-webserver.py`
-
-·	Server is now running on port 8080
+- Ensure Python3 is installed with pip (virtual environment is recommended)
+- Install requirements.txt file
+	- `pip install -r requirements.txt`
+- Copy the pyatv-webserver.py to your Linux environment
+- Run the Webserver Python script in a screen or background process of your choice:
+	- `python3 pyatv-webserver.py`
+- Server is now running on port 8080
 ## Pairing Apple TV
-·	Run the Scan Devices action from Composer
+- Run the Scan Devices action from Composer
+- The Latest Status property will state when scan is complete
+- The Device Selector property will populate with available devices
+- Select the desired device, the Protocols property will populate
+- Select Companion or AirPlay (you will need to pair with both protocols)
+- After setting the protocol, the device will display a PIN on screen
+- Enter the PIN in Composer (perform the pairing again with the other protocol)
+- Run the Test Connection action to verify everything works
 
-·	Verify output in the Lua console, which will dump all Apple Related devices and protocols
-
-·	The Device Selector property will populate with available devices
-
-·	Select the desired device, the Protocols and Device ID property will populate
-
-·	Select Companion or AirPlay (you will need to pair with both protocols)
-
-·	After setting the protocol, the device will display a PIN on screen
-
-·	Enter the PIN in Composer (perform the pairing again with the other Protocol)
-
-·	Run the Test Connection action to verify everything works
-
-·	The Lua console will display the result
 ## ToDos
-· Create press and hold actions
+- Nothing currently, open to suggestions :)

@@ -1,0 +1,5 @@
+pyatv>=0.16.0
+falcon
+uvicorn
+requests
+wsproto #websockets library doesn't like C4's ping/pong for some reason

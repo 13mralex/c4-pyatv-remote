@@ -1,12 +1,12 @@
 <devicedata>
-  <copyright>Copyright 2022 Alex Martin. All rights reserved.</copyright>
+  <copyright>Copyright 2024 Alex Martin. All rights reserved.</copyright>
   <creator>Original by Alex Martin (Mod by Welton Cartel)</creator>
   <manufacturer>Apple</manufacturer>
   <name>Apple TV IP Control</name>
   <model>TV</model>
   <created>09/15/2021 12:00 AM</created>
-  <modified>07/26/2022 7:29 PM</modified>
-  <version>41</version>
+  <modified>12/02/2024 8:00 PM</modified>
+  <version>50</version>
   <control>lua_gen</control>
   <driver>DriverWorks</driver>
   <small image_source="c4z">icons/device_sm.png</small>
@@ -18,26 +18,20 @@
     <script file="driver.lua" />
     <properties>
       <property>
-        <name>Debug Mode</name>
-        <type>LIST</type>
-        <items>
-          <item>Off</item>
-          <item>On</item>
-        </items>
-        <default>Off</default>
-        <readonly>false</readonly>
+        <name>Server Configuration</name>
+        <type>LABEL</type>
+        <default>Server Configuration</default>
       </property>
       <property>
-        <name>Server IP</name>
+        <name>Server Address</name>
         <type>STRING</type>
         <default />
         <readonly>false</readonly>
       </property>
       <property>
-        <name>Server Port</name>
-        <type>STRING</type>
-        <default>8080</default>
-        <readonly>false</readonly>
+        <name>Device Configuration</name>
+        <type>LABEL</type>
+        <default>Device Configuration</default>
       </property>
       <property>
         <name>Device Selector</name>
@@ -53,31 +47,35 @@
         <default />
       </property>
       <property>
-        <name>Device ID</name>
+        <name>Latest Status</name>
         <type>STRING</type>
         <default />
         <readonly>true</readonly>
       </property>
       <property>
-        <name>AirPlay Credentials</name>
-        <type>STRING</type>
-        <default />
-        <readonly>true</readonly>
+        <name>Driver Configuration</name>
+        <type>LABEL</type>
+        <default>Driver Configuration</default>
       </property>
       <property>
-        <name>Companion Credentials</name>
-        <type>STRING</type>
-        <default />
-        <readonly>true</readonly>
-      </property>
-      <property>
-        <name>Poll Device</name>
+        <name>Debug Mode</name>
         <type>LIST</type>
-        <default>Only when on</default>
         <items>
-          <item>Only when on</item>
-          <item>Always</item>
+          <item>Off</item>
+          <item>On</item>
         </items>
+        <default>Off</default>
+        <readonly>false</readonly>
+      </property>
+      <property>
+        <name>Device Selection Behavior</name>
+        <type>LIST</type>
+        <items>
+          <item>Show Menu Items</item>
+          <item>Now Playing Screen</item>
+        </items>
+        <default>Show Menu Items</default>
+        <readonly>false</readonly>
       </property>
       <property>
         <name>Passthrough Mode</name>
@@ -114,6 +112,13 @@
         </items>
         <default>Do Nothing</default>
         <readonly>false</readonly>
+      </property>
+      <property>
+        <name>Button Hold Threshold</name>
+        <type>RANGED_INTEGER</type>
+        <default>150</default>
+        <minimum>100</minimum>
+        <maximum>1000</maximum>
       </property>
       <property>
         <name>MENU Button</name>
@@ -221,13 +226,6 @@
         </items>
         <default>Play/Pause</default>
         <readonly>false</readonly>
-      </property>
-      <property>
-        <name>Button Hold Threshold</name>
-        <type>RANGED_INTEGER</type>
-        <default>150</default>
-        <minimum>100</minimum>
-        <maximum>1000</maximum>
       </property>
     </properties>
     <commands>
@@ -360,6 +358,270 @@
           <Type>PROTOCOL</Type>
         </Command>
       </Tabs>
+      <Screens>
+        <Screen xsi:type="ListScreenType">
+          <Id>UsersScreen</Id>
+          <DataCommand>
+            <!--Command sent by Navigator to the driver to retreive data for this Screen -->
+            <Name>Users</Name>
+            <Type>PROTOCOL</Type>
+            <Params>
+              <Param>
+                <!-- SYSTEM variable auto populated by Navigator with the Id of the current Screen -->
+                <Name>screenId</Name>
+                <Type>SYSTEM</Type>
+                <Value>screenId</Value>
+              </Param>
+              <Param>
+                <!-- SYSTEM variable auto populated by Navigator with the Id of the currently selected Tab -->
+                <Name>tabId</Name>
+                <Type>SYSTEM</Type>
+                <Value>tabId</Value>
+              </Param>
+              <Param>
+                <!-- SYSTEM variable auto populated by Navigator with the depth (starting at 1) into the browse of this Tab -->
+                <Name>screenDepth</Name>
+                <Type>SYSTEM</Type>
+                <Value>screenDepth</Value>
+              </Param>
+              <Param>
+                <Name>id</Name>
+                <Type>FIRST_SELECTED</Type>
+                <Value>id</Value>
+              </Param>
+              <Param>
+                <Name>title</Name>
+                <Type>FIRST_SELECTED</Type>
+                <Value>title</Value>
+              </Param>
+            </Params>
+          </DataCommand>
+          <RequiresRefresh>true</RequiresRefresh>
+          <PaginationStyle>NONE</PaginationStyle>
+          <List>
+            <!-- List for Screen is defined the same way as the List for NowPlaying; there are some additional options: -->
+            <DefaultAction>UserSwitchUI</DefaultAction>
+            <ItemDefaultActionProperty>UserSwitchUI</ItemDefaultActionProperty>
+            <ItemActionIdsProperty>actions_list</ItemActionIdsProperty>
+            <TitleProperty>title</TitleProperty>
+            <SubTitleProperty>subtitle</SubTitleProperty>
+            <ImageProperty>image_list</ImageProperty>
+            <LengthProperty>duration</LengthProperty>
+            <!-- IsLink only puts a > at the end of the item.  You still need to define an action for it. -->
+            <IsLink>
+              <Property>isLink</Property>
+              <ValidValues>
+                <Value>true</Value>
+              </ValidValues>
+            </IsLink>
+            <IsHeader>
+              <Property>isHeader</Property>
+              <ValidValues>
+                <Value>true</Value>
+              </ValidValues>
+            </IsHeader>
+            <!-- If true, Navigator will try to translate the Title and SubTitle using the .po files provided by the driver -->
+            <WillTranslate>
+              <Property>translate</Property>
+              <ValidValues>
+                <Value>true</Value>
+              </ValidValues>
+            </WillTranslate>
+          </List>
+        </Screen>
+        <Screen xsi:type="ListScreenType">
+          <Id>AppsScreen</Id>
+          <DataCommand>
+            <!--Command sent by Navigator to the driver to retreive data for this Screen -->
+            <Name>Apps</Name>
+            <Type>PROTOCOL</Type>
+            <Params>
+              <Param>
+                <!-- SYSTEM variable auto populated by Navigator with the Id of the current Screen -->
+                <Name>screenId</Name>
+                <Type>SYSTEM</Type>
+                <Value>screenId</Value>
+              </Param>
+              <Param>
+                <!-- SYSTEM variable auto populated by Navigator with the Id of the currently selected Tab -->
+                <Name>tabId</Name>
+                <Type>SYSTEM</Type>
+                <Value>tabId</Value>
+              </Param>
+              <Param>
+                <!-- SYSTEM variable auto populated by Navigator with the depth (starting at 1) into the browse of this Tab -->
+                <Name>screenDepth</Name>
+                <Type>SYSTEM</Type>
+                <Value>screenDepth</Value>
+              </Param>
+              <Param>
+                <Name>id</Name>
+                <Type>FIRST_SELECTED</Type>
+                <Value>id</Value>
+              </Param>
+              <Param>
+                <Name>title</Name>
+                <Type>FIRST_SELECTED</Type>
+                <Value>title</Value>
+              </Param>
+            </Params>
+          </DataCommand>
+          <RequiresRefresh>true</RequiresRefresh>
+          <PaginationStyle>NONE</PaginationStyle>
+          <List>
+            <!-- List for Screen is defined the same way as the List for NowPlaying; there are some additional options: -->
+            <DefaultAction>AppLaunchUI</DefaultAction>
+            <ItemDefaultActionProperty>AppLaunchUI</ItemDefaultActionProperty>
+            <ItemActionIdsProperty>actions_list</ItemActionIdsProperty>
+            <TitleProperty>title</TitleProperty>
+            <SubTitleProperty>subtitle</SubTitleProperty>
+            <ImageProperty>image_list</ImageProperty>
+            <LengthProperty>duration</LengthProperty>
+            <!-- IsLink only puts a > at the end of the item.  You still need to define an action for it. -->
+            <IsLink>
+              <Property>isLink</Property>
+              <ValidValues>
+                <Value>true</Value>
+              </ValidValues>
+            </IsLink>
+            <IsHeader>
+              <Property>isHeader</Property>
+              <ValidValues>
+                <Value>true</Value>
+              </ValidValues>
+            </IsHeader>
+            <!-- If true, Navigator will try to translate the Title and SubTitle using the .po files provided by the driver -->
+            <WillTranslate>
+              <Property>translate</Property>
+              <ValidValues>
+                <Value>true</Value>
+              </ValidValues>
+            </WillTranslate>
+          </List>
+        </Screen>
+        <Screen xsi:type="ListScreenType">
+          <Id>UIDevicesScreen</Id>
+          <DataCommand>
+            <!--Command sent by Navigator to the driver to retreive data for this Screen -->
+            <Name>UIDevicesScreen</Name>
+            <Type>PROTOCOL</Type>
+            <Params>
+              <Param>
+                <!-- SYSTEM variable auto populated by Navigator with the Id of the current Screen -->
+                <Name>screenId</Name>
+                <Type>SYSTEM</Type>
+                <Value>screenId</Value>
+              </Param>
+              <Param>
+                <!-- SYSTEM variable auto populated by Navigator with the Id of the currently selected Tab -->
+                <Name>tabId</Name>
+                <Type>SYSTEM</Type>
+                <Value>tabId</Value>
+              </Param>
+              <Param>
+                <!-- SYSTEM variable auto populated by Navigator with the depth (starting at 1) into the browse of this Tab -->
+                <Name>screenDepth</Name>
+                <Type>SYSTEM</Type>
+                <Value>screenDepth</Value>
+              </Param>
+              <Param>
+                <Name>id</Name>
+                <Type>FIRST_SELECTED</Type>
+                <Value>id</Value>
+              </Param>
+              <Param>
+                <Name>title</Name>
+                <Type>FIRST_SELECTED</Type>
+                <Value>title</Value>
+              </Param>
+            </Params>
+          </DataCommand>
+          <RequiresRefresh>true</RequiresRefresh>
+          <PaginationStyle>NONE</PaginationStyle>
+          <List>
+            <!-- List for Screen is defined the same way as the List for NowPlaying; there are some additional options: -->
+            <DefaultAction>UIDeviceSelection</DefaultAction>
+            <ItemDefaultActionProperty>action</ItemDefaultActionProperty>
+            <ItemActionIdsProperty>actions_list</ItemActionIdsProperty>
+            <TitleProperty>title</TitleProperty>
+            <SubTitleProperty>subtitle</SubTitleProperty>
+            <ImageProperty>image_list</ImageProperty>
+            <LengthProperty>duration</LengthProperty>
+            <!-- IsLink only puts a > at the end of the item.  You still need to define an action for it. -->
+            <IsLink>
+              <Property>isLink</Property>
+              <ValidValues>
+                <Value>true</Value>
+              </ValidValues>
+            </IsLink>
+            <IsHeader>
+              <Property>isHeader</Property>
+              <ValidValues>
+                <Value>true</Value>
+              </ValidValues>
+            </IsHeader>
+            <!-- If true, Navigator will try to translate the Title and SubTitle using the .po files provided by the driver -->
+            <WillTranslate>
+              <Property>translate</Property>
+              <ValidValues>
+                <Value>true</Value>
+              </ValidValues>
+            </WillTranslate>
+          </List>
+        </Screen>
+        <Screen xsi:type="SettingsScreenType">
+          <Id>SettingsScreen</Id>
+          <DataCommand>
+            <Name>GetSettings</Name>
+            <Type>PROTOCOL</Type>
+          </DataCommand>
+          <RequiresRefresh>true</RequiresRefresh>
+          <Item>
+            <HeaderTxt>SERVER INFORMATION</HeaderTxt>
+          </Item>
+          <Item>
+            <Label>Server IP</Label>
+            <TextField propertyName="UIServerIP" />
+          </Item>
+          <Item>
+            <HeaderTxt>PAIRING</HeaderTxt>
+          </Item>
+          <Item>
+            <Button>
+              <Name>Scan Devices</Name>
+              <Command>
+                <Name>UIScanDevices</Name>
+                <Type>PROTOCOL</Type>
+              </Command>
+            </Button>
+          </Item>
+          <Item>
+            <Button>
+              <Name>Show Devices</Name>
+              <Command>
+                <Name>UIShowDevices</Name>
+                <Type>PROTOCOL</Type>
+              </Command>
+            </Button>
+          </Item>
+          <Item>
+            <Label>Selected Device</Label>
+            <Text propertyName="UISelectedDevice" />
+          </Item>
+          <Item>
+            <HeaderTxt>ACTIONS</HeaderTxt>
+          </Item>
+          <Item>
+            <Button>
+              <Name>Refresh Connection</Name>
+              <Command>
+                <Name>UIReconnect</Name>
+                <Type>PROTOCOL</Type>
+              </Command>
+            </Button>
+          </Item>
+        </Screen>
+      </Screens>
       <NowPlaying>
         <ActionIds>Shuffle Repeat</ActionIds>
         <!--Id values for Action items that will always be shown on the Now Playing screen -->
@@ -388,6 +650,135 @@
         </List>
       </NowPlaying>
       <Actions>
+        <Action>
+          <Id>UserSwitchUI</Id>
+          <Name>Switch User</Name>
+          <Command>
+            <Name>UserSwitchUI</Name>
+            <Type>PROTOCOL</Type>
+            <Params>
+              <Param>
+                <Name>screenId</Name>
+                <Type>SYSTEM</Type>
+                <Value>screenId</Value>
+              </Param>
+              <Param>
+                <Name>tabId</Name>
+                <Type>SYSTEM</Type>
+                <Value>tabId</Value>
+              </Param>
+              <Param>
+                <Name>screenDepth</Name>
+                <Type>SYSTEM</Type>
+                <Value>screenDepth</Value>
+              </Param>
+              <Param>
+                <Name>id</Name>
+                <Type>FIRST_SELECTED</Type>
+                <Value>id</Value>
+              </Param>
+              <Param>
+                <Name>title</Name>
+                <Type>FIRST_SELECTED</Type>
+                <Value>title</Value>
+              </Param>
+            </Params>
+          </Command>
+        </Action>
+        <Action>
+          <Id>AppLaunchUI</Id>
+          <Name>Launch App</Name>
+          <Command>
+            <Name>AppLaunchUI</Name>
+            <Type>PROTOCOL</Type>
+            <Params>
+              <Param>
+                <Name>screenId</Name>
+                <Type>SYSTEM</Type>
+                <Value>screenId</Value>
+              </Param>
+              <Param>
+                <Name>tabId</Name>
+                <Type>SYSTEM</Type>
+                <Value>tabId</Value>
+              </Param>
+              <Param>
+                <Name>screenDepth</Name>
+                <Type>SYSTEM</Type>
+                <Value>screenDepth</Value>
+              </Param>
+              <Param>
+                <Name>id</Name>
+                <Type>FIRST_SELECTED</Type>
+                <Value>id</Value>
+              </Param>
+              <Param>
+                <Name>title</Name>
+                <Type>FIRST_SELECTED</Type>
+                <Value>title</Value>
+              </Param>
+            </Params>
+          </Command>
+        </Action>
+        <Action>
+          <Id>UIDeviceSelection</Id>
+          <Name>Select Device</Name>
+          <Command>
+            <Name>UIDeviceSelection</Name>
+            <Type>PROTOCOL</Type>
+            <Params>
+              <Param>
+                <Name>screenId</Name>
+                <Type>SYSTEM</Type>
+                <Value>screenId</Value>
+              </Param>
+              <Param>
+                <Name>tabId</Name>
+                <Type>SYSTEM</Type>
+                <Value>tabId</Value>
+              </Param>
+              <Param>
+                <Name>screenDepth</Name>
+                <Type>SYSTEM</Type>
+                <Value>screenDepth</Value>
+              </Param>
+              <Param>
+                <Name>id</Name>
+                <Type>FIRST_SELECTED</Type>
+                <Value>id</Value>
+              </Param>
+              <Param>
+                <Name>title</Name>
+                <Type>FIRST_SELECTED</Type>
+                <Value>title</Value>
+              </Param>
+            </Params>
+          </Command>
+        </Action>
+        <Action>
+          <Id>UIShowDevices</Id>
+          <Name>Show Devices</Name>
+          <Command>
+            <Name>UIShowDevices</Name>
+            <Type>PROTOCOL</Type>
+          </Command>
+        </Action>
+        <Action>
+          <Id>UIReconnect</Id>
+          <Name>Show Devices</Name>
+          <Command>
+            <Name>UIReconnect</Name>
+            <Type>PROTOCOL</Type>
+          </Command>
+        </Action>
+        <Action>
+          <Id>NowPlaying</Id>
+          <Name>Now Playing</Name>
+          <Command>
+            <Name>NowPlayingCommand</Name>
+            <Type>PROTOCOL</Type>
+          </Command>
+        </Action>
         <Action>
           <Id>Shuffle</Id>
           <!-- value to include in ActionIds or the content of ItemDefaultActionProperty, etc to include this action-->
@@ -496,16 +887,6 @@
           </ReleaseCommand>
         </Transport>
       </Dashboard>
-      <Actions>
-        <Action>
-          <Id>NowPlaying</Id>
-          <Name>Now Playing</Name>
-          <Command>
-            <Name>NowPlayingCommand</Name>
-            <Type>PROTOCOL</Type>
-          </Command>
-        </Action>
-      </Actions>
     </UI>
     <video_provider_count>1</video_provider_count>
     <digital_audio_support>False</digital_audio_support>

@@ -1,16 +1,16 @@
--- Copyright 2022 Snap One, LLC. All rights reserved.
+-- Copyright 2024 Snap One, LLC. All rights reserved.
 
 Metrics = require ('drivers-common-public.module.metrics')
 require ('drivers-common-public.global.lib')
 
-COMMON_HANDLERS_VER = 17
+COMMON_HANDLERS_VER = 28
 
 do -- define globals
 	DEBUG_RFN = false
 end
 
---[[
-	Inbound Driver Functions:
+--[[ Inbound Driver Functions:
+
 		-- ExecuteCommand (strCommand, tParams)
 		FinishedWithNotificationAttachment ()
 		GetNotificationAttachmentURL ()
@@ -66,8 +66,7 @@ end
 
 ]]
 
---[[
-	C4 System Events (from C4SystemEvents global) - valid values for OSE keys
+--[[ C4 System Events (from C4SystemEvents global) - valid values for OSE keys
 	1	OnAll
 	2	OnAlive
 	3	OnProjectChanged
@@ -187,22 +186,39 @@ end
 	117	OnZigbeeNetworkHealth
 ]]
 
-do	--Globals
-	EC = EC or {}
-	OBC = OBC or {}
-	ODE = ODE or {}
-	OCS = OCS or {}
-	OPC = OPC or {}
-	OSE = OSE or {}
-	OVC = OVC or {}
-	OWVC = OWVC or {}
-	RFN = RFN or {}
-	RFP = RFP or {}
-	TC = TC or {}
-	UIR = UIR or {}
+do --Globals
+	EC = EC or { suppressDebug = {}, }
+	OBC = OBC or { suppressDebug = {}, }
+	ODE = ODE or { suppressDebug = {}, }
+	OCS = OCS or { suppressDebug = {}, }
+	OPC = OPC or { suppressDebug = {}, }
+	OSE = OSE or { suppressDebug = {}, }
+	OVC = OVC or { suppressDebug = {}, }
+	OWVC = OWVC or { suppressDebug = {}, }
+	RFN = RFN or { suppressDebug = {}, }
+	RFP = RFP or { suppressDebug = {}, }
+	TC = TC or { suppressDebug = {}, }
+	UIR = UIR or { suppressDebug = {}, }
+
+	ValidVarTypes = {
+		BOOL = true,
+		DEVICE = true,
+		FLOAT = true,
+		INT = true,
+		MEDIA = true,
+		NUMBER = true,
+		ROOM = true,
+		STRING = true,
+		STATE = true,
+		TIME = true,
+		ULONG = true,
+		XML = true,
+		LEVEL = true,
+		LIST = true,
+	}
 end
 
-do	--Setup Metrics
+do --Setup Metrics
 	MetricsHandler = Metrics:new ('dcp_handler', COMMON_HANDLERS_VER)
 end
 
@@ -216,19 +232,20 @@ function HandlerDebug (init, tParams, args)
 	end
 
 	local output = init
+	for k, v in pairs (output) do output [k] = "  " .. v end
 
 	if (type (tParams) == 'table' and next (tParams) ~= nil) then
-		table.insert (output, '----PARAMS----')
+		table.insert (output, '        ----PARAMS----')
 		for k, v in pairs (tParams) do
-			local line = tostring (k) .. ' = ' .. tostring (v)
+			local line = string.format ("  %-20s = %s", tostring (k), tostring (v))
 			table.insert (output, line)
 		end
 	end
 
 	if (type (args) == 'table' and next (args) ~= nil) then
-		table.insert (output, '----ARGS----')
+		table.insert (output, '        ----ARGS----')
 		for k, v in pairs (args) do
-			local line = tostring (k) .. ' = ' .. tostring (v)
+			local line = string.format ("  %-20s = %s", tostring (k), tostring (v))
 			table.insert (output, line)
 		end
 	end
@@ -242,9 +259,10 @@ function HandlerDebug (init, tParams, args)
 		t = os.time ()
 		ms = ''
 	end
-	local s = os.date ('%x %X') .. ms
+	local s = string.format ("%-21s : ", os.date ('%x %X') .. ms)
 
-	table.insert (output, 1, '-->  ' .. s)
+	table.insert (output, 1, s)
+	table.insert (output, 1, '-->')
 	table.insert (output, '<--')
 	output = table.concat (output, '\r\n')
 	print (output)
@@ -253,10 +271,15 @@ end
 
 function ExecuteCommand (strCommand, tParams)
 	tParams = tParams or {}
-	local init = {
-		'ExecuteCommand: ' .. strCommand,
-	}
-	HandlerDebug (init, tParams)
+
+	local suppressDebug = Select (EC, 'suppressDebug', strCommand)
+
+	if (not suppressDebug) then
+		local init = {
+			'ExecuteCommand: ' .. strCommand,
+		}
+		HandlerDebug (init, tParams)
+	end
 
 	if (strCommand == 'LUA_ACTION') then
 		if (tParams.ACTION) then
@@ -278,20 +301,26 @@ function ExecuteCommand (strCommand, tParams)
 	elseif (success == false) then
 		MetricsHandler:SetCounter ('Error_ExecuteCommand')
 		print ('ExecuteCommand error: ', ret, strCommand)
+	elseif (DEBUGPRINT) then
+		print ('Unhandled ExecuteCommand')
 	end
 end
 
 function OnBindingChanged (idBinding, strClass, bIsBound, otherDeviceId, otherBindingId)
-	local init = {
-		'OnBindingChanged: ' .. idBinding,
-	}
-	local tParams = {
-		strClass = strClass,
-		bIsBound = tostring (bIsBound),
-		otherDeviceId = otherDeviceId,
-		otherBindingId = otherBindingId,
-	}
-	HandlerDebug (init, tParams)
+	local suppressDebug = Select (OBC, 'suppressDebug', idBinding)
+
+	if (not suppressDebug) then
+		local init = {
+			'OnBindingChanged: ' .. idBinding,
+		}
+		local tParams = {
+			strClass = strClass,
+			bIsBound = tostring (bIsBound),
+			otherDeviceId = otherDeviceId,
+			otherBindingId = otherBindingId,
+		}
+		HandlerDebug (init, tParams)
+	end
 
 	local success, ret
 
@@ -304,19 +333,24 @@ function OnBindingChanged (idBinding, strClass, bIsBound, otherDeviceId, otherBi
 	elseif (success == false) then
 		MetricsHandler:SetCounter ('Error_OnBindingChanged')
 		print ('OnBindingChanged error: ', ret, idBinding, strClass, bIsBound, otherDeviceId, otherBindingId)
+	elseif (DEBUGPRINT) then
+		print ('Unhandled OnBindingChanged')
 	end
-
 end
 
 function OnConnectionStatusChanged (idBinding, nPort, strStatus)
-	local init = {
-		'OnConnectionStatusChanged: ' .. idBinding
-	}
-	local tParams = {
-		nPort = nPort,
-		strStatus = strStatus,
-	}
-	HandlerDebug (init, tParams)
+	local suppressDebug = Select (OCS, 'suppressDebug', idBinding)
+
+	if (not suppressDebug) then
+		local init = {
+			'OnConnectionStatusChanged: ' .. idBinding,
+		}
+		local tParams = {
+			nPort = nPort,
+			strStatus = strStatus,
+		}
+		HandlerDebug (init, tParams)
+	end
 
 	local success, ret
 
@@ -329,13 +363,16 @@ function OnConnectionStatusChanged (idBinding, nPort, strStatus)
 	elseif (success == false) then
 		MetricsHandler:SetCounter ('Error_OnConnectionStatusChanged')
 		print ('OnConnectionStatusChanged error: ', ret, idBinding, nPort, strStatus)
+	elseif (DEBUGPRINT) then
+		print ('Unhandled OnConnectionStatusChanged')
 	end
 end
 
 function RegisterDeviceEvent (firingDeviceId, eventId, callback)
 	if (firingDeviceId == nil or eventId == nil) then
 		MetricsHandler:SetCounter ('Error_RegisterDeviceEvent')
-		print ('RegisterDeviceEvent error (Invalid idDevice / idVariable): ', tostring(firingDeviceId), tostring(eventId), tostring(callback))
+		print ('RegisterDeviceEvent error (Invalid idDevice / idVariable): ', tostring (firingDeviceId),
+			tostring (eventId), tostring (callback))
 		return
 	end
 
@@ -355,23 +392,32 @@ end
 function UnregisterDeviceEvent (firingDeviceId, eventId)
 	if (firingDeviceId == nil or eventId == nil) then
 		MetricsHandler:SetCounter ('Error_UnregisterDeviceEvent')
-		print ('UnregisterDeviceEvent error (Invalid idDevice / idVariable): ', tostring(firingDeviceId), tostring(eventId))
+		print ('UnregisterDeviceEvent error (Invalid idDevice / idVariable): ', tostring (firingDeviceId),
+			tostring (eventId))
 		return
 	end
+
+	C4:UnregisterDeviceEvent (firingDeviceId, eventId)
 
 	if (ODE and ODE [firingDeviceId]) then
 		ODE [firingDeviceId] [eventId] = nil
 	end
 
-	C4:UnregisterDeviceEvent (firingDeviceId, eventId)
+	if (ODE [firingDeviceId] and not next (ODE [firingDeviceId])) then
+		ODE [firingDeviceId] = nil
+	end
 end
 
 function OnDeviceEvent (firingDeviceId, eventId)
-	local init = {
-		'OnDeviceEvent: ' .. C4:GetDeviceDisplayName (firingDeviceId) .. ' [' .. firingDeviceId .. ']',
-		eventId,
-	}
-	HandlerDebug (init)
+	local suppressDebug = Select (ODE, 'suppressDebug', firingDeviceId, eventId)
+
+	if (not suppressDebug) then
+		local init = {
+			'OnDeviceEvent: ' .. C4:GetDeviceDisplayName (firingDeviceId) .. ' [' .. firingDeviceId .. ']',
+			eventId,
+		}
+		HandlerDebug (init)
+	end
 
 	local success, ret
 
@@ -384,26 +430,29 @@ function OnDeviceEvent (firingDeviceId, eventId)
 	elseif (success == false) then
 		MetricsHandler:SetCounter ('Error_OnDeviceEvent')
 		print ('OnDeviceEvent error: ', ret, firingDeviceId, eventId)
+	elseif (DEBUGPRINT) then
+		print ('Unhandled OnDeviceEvent')
 	end
 end
 
 function UpdateProperty (strProperty, strValue, notifyChange)
 	if (type (strProperty) ~= 'string') then
 		MetricsHandler:SetCounter ('Error_UpdateProperty')
-		print ('UpdateProperty error (strProperty not string): ', tostring(strProperty), tostring(strValue))
-		return
-	end
-
-	if (type (strValue) ~= 'string') then
-		MetricsHandler:SetCounter ('Error_UpdateProperty')
-		print ('UpdateProperty error (strValue not string): ', tostring(strProperty), tostring(strValue))
+		print ('UpdateProperty error (strProperty not string): ', tostring (strProperty), tostring (strValue))
 		return
 	end
 
 	if (Properties [strProperty] == nil) then
 		MetricsHandler:SetCounter ('Error_UpdateProperty')
-		print ('UpdateProperty error (Property not present in Properties table): ', tostring(strProperty), tostring(strValue))
+		print ('UpdateProperty error (Property not present in Properties table): ', tostring (strProperty),
+			tostring (strValue))
 		return
+	end
+
+	if (strValue == nil) then
+		strValue = ''
+	elseif (type (strValue) ~= 'string') then
+		strValue = tostring (strValue)
 	end
 
 	if (Properties [strProperty] ~= strValue) then
@@ -420,11 +469,15 @@ function OnPropertyChanged (strProperty)
 		value = ''
 	end
 
-	local init = {
-		'OnPropertyChanged: ' .. strProperty,
-		value,
-	}
-	HandlerDebug (init)
+	local suppressDebug = Select (OPC, 'suppressDebug', strProperty)
+
+	if (not suppressDebug) then
+		local init = {
+			'OnPropertyChanged: ' .. strProperty,
+			value,
+		}
+		HandlerDebug (init)
+	end
 
 	strProperty = string.gsub (strProperty, '%s+', '_')
 
@@ -439,17 +492,23 @@ function OnPropertyChanged (strProperty)
 	elseif (success == false) then
 		MetricsHandler:SetCounter ('Error_OnPropertyChanged')
 		print ('OnPropertyChanged error: ', ret, strProperty, value)
+	elseif (DEBUGPRINT) then
+		print ('Unhandled OnPropertyChanged')
 	end
 end
 
 function OnSystemEvent (event)
 	local eventName = string.match (event, '.-name="(.-)"')
 
-	local init = {
-		'OnSystemEvent: ' .. eventName,
-		event,
-	}
-	HandlerDebug (init)
+	local suppressDebug = Select (OSE, 'suppressDebug', eventName)
+
+	if (not suppressDebug) then
+		local init = {
+			'OnSystemEvent: ' .. eventName,
+			event,
+		}
+		HandlerDebug (init)
+	end
 
 	local success, ret
 
@@ -465,33 +524,99 @@ function OnSystemEvent (event)
 	elseif (success == false) then
 		MetricsHandler:SetCounter ('Error_OnSystemEvent')
 		print ('OnSystemEvent error: ', ret, eventName, event)
+	elseif (DEBUGPRINT) then
+		print ('Unhandled OnSystemEvent')
 	end
 end
 
-function SetVariable (strVariable, strValue, notifyChange)
-	if (strVariable == nil or strValue == nil) then
-		MetricsHandler:SetCounter ('Error_SetVariable')
-		print ('SetVariable error (Invalid strVariable / strValue): ', tostring(strVariable), tostring(strValue))
+function conformVariable (var)
+	local ret
+	if (type (var) == 'boolean') then
+		ret = (var and '1') or '0'
+	elseif (type (var) ~= 'string') then
+		ret = tostring (var)
+	else
+		ret = var
+	end
+	return ret
+end
+
+function AddVariable (strVariable, strValue, varType, readOnly, hidden)
+	if (type (strVariable) ~= 'string') then
+		MetricsHandler:SetCounter ('Error_AddVariable')
+		print ('AddVariable error (Invalid strVariable): ', tostring (strVariable), type (strVariable))
 		return
 	end
 
-	C4:SetVariable (strVariable, strValue)
+	if (type (varType) ~= 'string') then
+		MetricsHandler:SetCounter ('Error_AddVariable')
+		print ('AddVariable error (varType not string): ', tostring (varType), type (varType))
+		return
+	end
+
+	if (not (ValidVarTypes [varType])) then
+		MetricsHandler:SetCounter ('Error_AddVariable')
+		print ('AddVariable error (Invalid varType): ', tostring (varType))
+		return
+	end
+
+	strValue = conformVariable (strValue)
+
+	if (Variables [strVariable]) then
+		SetVariable (strVariable, strValue)
+		return
+	end
+
+	if (readOnly ~= true) then
+		readOnly = false
+	end
+
+	if (hidden ~= true) then
+		hidden = false
+	end
+
+	C4:AddVariable (strVariable, strValue, varType, readOnly, hidden)
+end
+
+function SetVariable (strVariable, strValue, notifyChange)
+	if (type (strVariable) ~= 'string') then
+		MetricsHandler:SetCounter ('Error_SetVariable')
+		print ('AddVariable error (Invalid strVariable): ', tostring (strVariable), type (strVariable))
+		return
+	end
+
+	if (strValue == nil) then
+		MetricsHandler:SetCounter ('Error_SetVariable')
+		print ('SetVariable error (Invalid strValue): nil')
+		return
+	end
+
+	strValue = conformVariable (strValue)
+
+	if (Variables [strVariable] ~= strValue) then
+		C4:SetVariable (strVariable, strValue)
+	end
 	if (notifyChange == true) then
 		OnVariableChanged (strVariable)
 	end
 end
 
-function OnVariableChanged (strVariable)
+function OnVariableChanged (strVariable, variableId)
 	local value = Variables [strVariable]
 	if (value == nil) then
 		value = ''
 	end
 
-	local init = {
-		'OnVariableChanged: ' .. strVariable,
-		value,
-	}
-	HandlerDebug (init)
+	local suppressDebug = Select (OVC, 'suppressDebug', strVariable) or
+		Select (OVC, 'suppressDebug', variableId)
+
+	if (not suppressDebug) then
+		local init = {
+			'OnVariableChanged: ' .. strVariable .. ' [' .. tostring (variableId) .. ']',
+			value,
+		}
+		HandlerDebug (init)
+	end
 
 	strVariable = string.gsub (strVariable, '%s+', '_')
 
@@ -499,6 +624,8 @@ function OnVariableChanged (strVariable)
 
 	if (OVC and OVC [strVariable] and type (OVC [strVariable]) == 'function') then
 		success, ret = pcall (OVC [strVariable], value)
+	elseif (OVC and OVC [variableId] and type (OVC [variableId]) == 'function') then
+		success, ret = pcall (OVC [variableId], value)
 	end
 
 	if (success == true) then
@@ -506,13 +633,16 @@ function OnVariableChanged (strVariable)
 	elseif (success == false) then
 		MetricsHandler:SetCounter ('Error_OnVariableChanged')
 		print ('OnVariableChanged error: ', ret, strVariable, value)
+	elseif (DEBUGPRINT) then
+		print ('Unhandled OnVariableChanged')
 	end
 end
 
 function RegisterVariableListener (idDevice, idVariable, callback)
 	if (idDevice == nil or idVariable == nil) then
 		MetricsHandler:SetCounter ('Error_RegisterVariableListener')
-		print ('RegisterVariableListener error (Invalid idDevice / idVariable): ', tostring(idDevice), tostring(idVariable), tostring(callback))
+		print ('RegisterVariableListener error (Invalid idDevice / idVariable): ', tostring (idDevice),
+			tostring (idVariable), tostring (callback))
 		return
 	end
 
@@ -532,28 +662,37 @@ end
 function UnregisterVariableListener (idDevice, idVariable)
 	if (idDevice == nil or idVariable == nil) then
 		MetricsHandler:SetCounter ('Error_UnregisterVariableListener')
-		print ('UnregisterVariableListener error (Invalid idDevice / idVariable): ', tostring(idDevice), tostring(idVariable))
+		print ('UnregisterVariableListener error (Invalid idDevice / idVariable): ', tostring (idDevice),
+			tostring (idVariable))
 		return
 	end
+
+	C4:UnregisterVariableListener (idDevice, idVariable)
 
 	if (OWVC and OWVC [idDevice]) then
 		OWVC [idDevice] [idVariable] = nil
 	end
 
-	C4:UnregisterVariableListener (idDevice, idVariable)
+	if (OWVC [idDevice] and not next (OWVC [idDevice])) then
+		OWVC [idDevice] = nil
+	end
 end
 
 function OnWatchedVariableChanged (idDevice, idVariable, strValue)
-	local init = {
-		'OnWatchedVariableChanged: ' .. C4:GetDeviceDisplayName (idDevice) .. ' [' .. idDevice .. ']',
-	}
-	local varName = Select (C4:GetDeviceVariables (idDevice), tostring (idVariable), 'name') or ''
-	varName = varName .. ' [' .. idVariable .. ']'
+	local suppressDebug = Select (OWVC, 'suppressDebug', idDevice, idVariable)
 
-	local tParams = {
-		[varName] = strValue,
-	}
-	HandlerDebug (init, tParams)
+	if (not suppressDebug) then
+		local init = {
+			'OnWatchedVariableChanged: ' .. C4:GetDeviceDisplayName (idDevice) .. ' [' .. idDevice .. ']',
+		}
+		local varName = Select (C4:GetDeviceVariables (idDevice), tostring (idVariable), 'name') or ''
+		varName = varName .. ' [' .. idVariable .. ']'
+
+		local tParams = {
+			[varName] = strValue,
+		}
+		HandlerDebug (init, tParams)
+	end
 
 	local success, ret
 
@@ -572,25 +711,19 @@ function OnWatchedVariableChanged (idDevice, idVariable, strValue)
 	elseif (success == false) then
 		MetricsHandler:SetCounter ('Error_OnWatchedVariableChanged')
 		print ('OnWatchedVariableChanged error: ', ret, idDevice, idVariable, strValue)
+	elseif (DEBUGPRINT) then
+		print ('Unhandled OnWatchedVariableChanged')
 	end
 end
 
 function ReceivedFromNetwork (idBinding, nPort, strData)
-	local suppressRFN
+	local suppressDebug = Select (RFN, 'suppressDebug', idBinding) or
+		Select (SSDP, 'SearchTargets', idBinding) or
+		(Select (WebSocket, 'Sockets', idBinding) and not DEBUG_WEBSOCKET)
 
-	if (WebSocket) then
-		if (WebSocket.Sockets and WebSocket.Sockets [idBinding]) then
-			suppressRFN = not (DEBUG_RFN or DEBUG_WEBSOCKET)
-		end
-	end
+	suppressDebug = suppressDebug and (not DEBUG_RFN)
 
-	if (SSDP) then
-		if (SSDP.SearchTargets and SSDP.SearchTargets [idBinding]) then
-			suppressRFN = not (DEBUG_RFN)
-		end
-	end
-
-	if (not suppressRFN) then
+	if (not suppressDebug) then
 		local init = {
 			'ReceivedFromNetwork: ' .. idBinding,
 		}
@@ -613,6 +746,8 @@ function ReceivedFromNetwork (idBinding, nPort, strData)
 	elseif (success == false) then
 		MetricsHandler:SetCounter ('Error_ReceivedFromNetwork')
 		print ('ReceivedFromNetwork error: ', ret, idBinding, nPort, strData)
+	elseif (DEBUGPRINT) then
+		print ('Unhandled ReceivedFromNetwork')
 	end
 end
 
@@ -628,17 +763,20 @@ function ReceivedFromProxy (idBinding, strCommand, tParams)
 		tParams.ARGS = nil
 	end
 
-	local init = {
-		'ReceivedFromProxy: ' .. idBinding,
-		strCommand,
-	}
-	HandlerDebug (init, tParams, args)
+	local suppressDebug = Select (RFP, 'suppressDebug', idBinding, strCommand)
+
+	if (not suppressDebug) then
+		local init = {
+			'ReceivedFromProxy: ' .. idBinding,
+			strCommand,
+		}
+		HandlerDebug (init, tParams, args)
+	end
 
 	local success, ret
 
 	if (RFP and RFP [strCommand] and type (RFP [strCommand]) == 'function') then
 		success, ret = pcall (RFP [strCommand], idBinding, strCommand, tParams, args)
-
 	elseif (RFP and RFP [idBinding] and type (RFP [idBinding]) == 'function') then
 		success, ret = pcall (RFP [idBinding], idBinding, strCommand, tParams, args)
 	end
@@ -648,6 +786,8 @@ function ReceivedFromProxy (idBinding, strCommand, tParams)
 	elseif (success == false) then
 		MetricsHandler:SetCounter ('Error_ReceivedFromProxy')
 		print ('ReceivedFromProxy error: ', ret, idBinding, strCommand)
+	elseif (DEBUGPRINT) then
+		print ('Unhandled ReceivedFromProxy')
 	end
 end
 
@@ -655,10 +795,14 @@ function TestCondition (strConditionName, tParams)
 	strConditionName = strConditionName or ''
 	tParams = tParams or {}
 
-	local init = {
-		'TestCondition: ' .. strConditionName,
-	}
-	HandlerDebug (init, tParams)
+	local suppressDebug = Select (TC, 'suppressDebug', strConditionName)
+
+	if (not suppressDebug) then
+		local init = {
+			'TestCondition: ' .. strConditionName,
+		}
+		HandlerDebug (init, tParams)
+	end
 
 	local success, ret
 
@@ -671,6 +815,8 @@ function TestCondition (strConditionName, tParams)
 	elseif (success == false) then
 		MetricsHandler:SetCounter ('Error_TestCondition')
 		print ('TestCondition error: ', ret, strConditionName)
+	elseif (DEBUGPRINT) then
+		print ('Unhandled TestCondition')
 	end
 end
 
@@ -678,10 +824,14 @@ function UIRequest (strCommand, tParams)
 	strCommand = strCommand or ''
 	tParams = tParams or {}
 
-	local init = {
-		'UIRequest: ' .. strCommand,
-	}
-	HandlerDebug (init, tParams)
+	local suppressDebug = Select (UIR, 'suppressDebug', strCommand)
+
+	if (not suppressDebug) then
+		local init = {
+			'UIRequest: ' .. strCommand,
+		}
+		HandlerDebug (init, tParams)
+	end
 
 	local success, ret
 
@@ -693,5 +843,7 @@ function UIRequest (strCommand, tParams)
 		return (ret)
 	elseif (success == false) then
 		print ('UIRequest Lua error: ', strCommand, ret)
+	elseif (DEBUGPRINT) then
+		print ('Unhandled UIRequest')
 	end
 end

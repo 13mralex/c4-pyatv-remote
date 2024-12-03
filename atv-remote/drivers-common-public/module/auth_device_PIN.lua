@@ -68,7 +68,7 @@ function oauth:GetPINCodeResponse (strError, responseCode, tHeaders, data, conte
 		self.device_code = data.device_code
 		local user_code = data.user_code
 		local verification_url = data.verification_url
-		local expires_in = data.expires_in or (5 * ONE_MINUTE)
+		local expires_in = tonumber(data.expires_in) or (5 * ONE_MINUTE)
 		local interval = data.interval or 5
 
 		if (self.notifyHandler.PINCodeReceived) then

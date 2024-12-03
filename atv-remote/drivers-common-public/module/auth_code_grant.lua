@@ -1,6 +1,6 @@
--- Copyright 2022 Snap One, LLC. All rights reserved.
+-- Copyright 2024 Snap One, LLC. All rights reserved.
 
-AUTH_CODE_GRANT_VER = 24
+AUTH_CODE_GRANT_VER = 31
 
 require ('drivers-common-public.global.lib')
 require ('drivers-common-public.global.url')
@@ -32,6 +32,11 @@ function oauth:new (tParams, providedRefreshToken)
 		SCOPES = tParams.SCOPES,
 
 		TOKEN_HEADERS = tParams.TOKEN_HEADERS,
+
+		USE_PKCE = tParams.USE_PKCE,
+
+		MAX_EXPIRES_IN = tParams.MAX_EXPIRES_IN or 86400,			-- one day
+		DEFAULT_EXPIRES_IN = tParams.DEFAULT_EXPIRES_IN or 3600,	-- one hour
 
 		notifyHandler = {},
 		Timer = {},
@@ -80,7 +85,7 @@ function oauth:new (tParams, providedRefreshToken)
 	return o, willGenerateRefreshEvent
 end
 
-function oauth:MakeState (contextInfo, extras, uriToCompletePage)
+function oauth:MakeState (contextInfo, extraParamsForAuthLink, uriToCompletePage)
 	if (type (contextInfo) ~= 'table') then
 		contextInfo = {}
 	end
@@ -104,7 +109,7 @@ function oauth:MakeState (contextInfo, extras, uriToCompletePage)
 	local context = {
 		contextInfo = contextInfo,
 		state = state,
-		extras = extras
+		extraParamsForAuthLink = extraParamsForAuthLink
 	}
 
 	self.metrics:SetCounter ('MakeStateAttempt')
@@ -122,7 +127,7 @@ function oauth:MakeStateResponse (strError, responseCode, tHeaders, data, contex
 	if (responseCode == 200) then
 		self.metrics:SetCounter ('MakeStateSuccess')
 		local state = context.state
-		local extras = context.extras
+		local extraParamsForAuthLink = context.extraParamsForAuthLink
 
 		local nonce = data.nonce
 		local expiresAt = data.expiresAt or (os.time () + self.REDIRECT_DURATION)
@@ -145,11 +150,11 @@ function oauth:MakeStateResponse (strError, responseCode, tHeaders, data, contex
 		end
 		self.Timer.CheckState = SetTimer (self.Timer.CheckState, 5 * ONE_SECOND, _timer, true)
 
-		self:GetLinkCode (state, contextInfo, extras)
+		self:GetLinkCode (state, contextInfo, extraParamsForAuthLink)
 	end
 end
 
-function oauth:GetLinkCode (state, contextInfo, extras)
+function oauth:GetLinkCode (state, contextInfo, extraParamsForAuthLink)
 	if (type (contextInfo) ~= 'table') then
 		contextInfo = {}
 	end
@@ -171,8 +176,19 @@ function oauth:GetLinkCode (state, contextInfo, extras)
 		scope = scope,
 	}
 
-	if (extras and type (extras) == 'table') then
-		for k, v in pairs (extras) do
+	if (self.USE_PKCE) then
+		self.code_verifier = GetRandomString (128)
+
+		local code_challenge = C4:Hash ('SHA256', self.code_verifier, SHA_ENC_DEFAULTS)
+		local code_challenge_b64 = C4:Base64Encode (code_challenge)
+		local code_challenge_b64_url = code_challenge_b64:gsub ('%+', '-'):gsub ('%/', '_'):gsub ('%=', '')
+
+		args.code_challenge = code_challenge_b64_url
+		args.code_challenge_method = 'S256'
+	end
+
+	if (extraParamsForAuthLink and type (extraParamsForAuthLink) == 'table') then
+		for k, v in pairs (extraParamsForAuthLink) do
 			args [k] = v
 		end
 	end
@@ -213,10 +229,12 @@ function oauth:CheckStateResponse (strError, responseCode, tHeaders, data, conte
 		CancelTimer (self.Timer.CheckState)
 		CancelTimer (self.Timer.GetCodeStatusExpired)
 
-		self:GetUserToken (data.code, contextInfo)
-
 		self.metrics:SetCounter ('LinkCodeConfirmed')
-		self:notify ('LinkCodeConfirmed', contextInfo)
+		self:notify ('LinkCodeConfirmed', contextInfo, data.code)
+
+		if (self.TOKEN_ENDPOINT_URI) then
+			self:GetUserToken (data.code, contextInfo)
+		end
 
 	elseif (responseCode == 204) then
 		self:notify ('LinkCodeWaiting', contextInfo)
@@ -276,6 +294,10 @@ function oauth:GetUserToken (code, contextInfo)
 			redirect_uri = self.REDIRECT_URI .. 'callback',
 		}
 
+		if (self.USE_PKCE) then
+			args.code_verifier = self.code_verifier
+		end
+
 		local url = self.TOKEN_ENDPOINT_URI
 
 		local data = MakeURL (nil, args)
@@ -307,6 +329,11 @@ function oauth:RefreshToken (contextInfo, newRefreshToken)
 		return false
 	end
 
+	if (self.Timer.RefreshingToken) then
+		self.metrics:SetCounter ('CollisionAvoided')
+		return
+	end
+
 	if (type (contextInfo) ~= 'table') then
 		contextInfo = {}
 	end
@@ -335,16 +362,27 @@ function oauth:RefreshToken (contextInfo, newRefreshToken)
 		end
 	end
 
+	local _timer = function (timer)
+		self.metrics:SetCounter ('CollisionAvoidanceTimerExpired')
+		self.Timer.RefreshingToken = self.Timer.RefreshingToken:Cancel ()
+		self:RefreshToken ()
+	end
+	self.Timer.RefreshingToken = SetTimer (self.Timer.RefreshingToken, 30 * ONE_SECOND, _timer)
+
 	self:urlPost (url, data, headers, 'GetTokenResponse', {contextInfo = contextInfo})
 end
 
 function oauth:GetTokenResponse (strError, responseCode, tHeaders, data, context, url)
+	if (self.Timer.RefreshingToken) then
+		self.Timer.RefreshingToken = self.Timer.RefreshingToken:Cancel ()
+	end
+
 	if (strError) then
 		dbg ('Error with GetToken:', strError)
 		local _timer = function (timer)
 			self:RefreshToken ()
 		end
-		self.Timer.RefreshToken = SetTimer (self.Timer.RefreshToken, 30 * 1000, _timer)
+		self.Timer.RefreshToken = SetTimer (self.Timer.RefreshToken, 30 * ONE_SECOND, _timer)
 		return
 	end
 
@@ -366,14 +404,22 @@ function oauth:GetTokenResponse (strError, responseCode, tHeaders, data, context
 
 		self.SCOPE = data.scope or self.SCOPE
 
-		self.EXPIRES_IN = data.expires_in
+		self.EXPIRES_IN = tonumber(data.expires_in) or self.EXPIRES_IN or self.DEFAULT_EXPIRES_IN
 
 		if (self.EXPIRES_IN and self.REFRESH_TOKEN) then
 			local _timer = function (timer)
 				self:RefreshToken ()
 			end
+			if (self.EXPIRES_IN > self.MAX_EXPIRES_IN) then
+				self.metrics:SetCounter ('ShortenedExpiryTime')
+				self.EXPIRES_IN_ORIGINAL = self.EXPIRES_IN
+				self.EXPIRES_IN = self.MAX_EXPIRES_IN
+			end
 
-			self.Timer.RefreshToken = SetTimer (self.Timer.RefreshToken, self.EXPIRES_IN * 950, _timer)
+			-- smear out refreshing the token to avoid all tokens across entire system being refreshed at the same time
+			local delay = self.EXPIRES_IN * math.random (750, 950)
+
+			self.Timer.RefreshToken = SetTimer (self.Timer.RefreshToken, delay, _timer)
 		end
 
 		print ((self.NAME or 'OAuth') .. ': Access Token received, accessToken:' .. tostring (self.ACCESS_TOKEN ~= nil) .. ', refreshToken:' .. tostring (self.REFRESH_TOKEN ~= nil))
@@ -395,7 +441,6 @@ function oauth:GetTokenResponse (strError, responseCode, tHeaders, data, context
 
 		self:setLink ('')
 
-
 		self.metrics:SetCounter ('AccessTokenDenied')
 		if (data.error) then
 			self.metrics:SetString ('AccessTokenDeniedReason', data.error)
@@ -408,6 +453,8 @@ function oauth:GetTokenResponse (strError, responseCode, tHeaders, data, context
 end
 
 function oauth:DeleteRefreshToken ()
+	local existed = (self.REFRESH_TOKEN ~= nil)
+
 	local persistStoreKey = C4:Hash ('SHA256', C4:GetDeviceID () .. self.API_CLIENT_ID, SHA_ENC_DEFAULTS)
 	PersistDeleteValue (persistStoreKey)
 	self.ACCESS_TOKEN = nil
@@ -416,6 +463,8 @@ function oauth:DeleteRefreshToken ()
 	self.Timer.RefreshToken = CancelTimer (self.Timer.RefreshToken)
 
 	self.metrics:SetCounter ('RefreshTokenDeleted')
+
+	self:notify ('RefreshTokenDeleted', nil, existed)
 end
 
 function oauth:setLink (link, contextInfo)
@@ -432,9 +481,9 @@ function oauth:setLink (link, contextInfo)
 	end
 end
 
-function oauth:notify (handler, ...)
+function oauth:notify (handler, contextInfo, ...)
 	if (self.notifyHandler [handler] and type (self.notifyHandler [handler]) == 'function') then
-		local success, ret = pcall (self.notifyHandler [handler], ...)
+		local success, ret = pcall (self.notifyHandler [handler], contextInfo, ...)
 		if (success == false) then
 			print ((self.NAME or 'OAuth') .. ':' .. handler .. ' Lua error: ', ret, ...)
 		end

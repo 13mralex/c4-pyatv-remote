@@ -1,70 +1,184 @@
+import falcon.asgi
+import uvicorn
 import asyncio
-from aiohttp import WSMsgType, web
-import pyatv
-from pyatv.interface import (
-    App,
-    DeviceListener,
-    Playing,
-    PowerListener,
-    PushListener,
-    RemoteControl,
-    retrieve_commands,
-    Audio
-)
-from pyatv.const import (
-    InputAction
-)
-from enum import Enum
-import datetime
-from pyatv.const import Protocol
-import base64
-from io import BytesIO
-import os
 import json
-import urllib.request
+import pyatv.conf
+import pyatv.const
+import pyatv.interface
 import requests
+import logging
+import os
+from falcon import WebSocketDisconnected
 
-PAGE = """
-<script>
-let socket = new WebSocket('ws://' + location.host + '/ws/DEVICE_ID');
 
-socket.onopen = function(e) {
-  document.getElementById('status').innerText = 'Connected!';
-};
+logging.basicConfig(level="INFO")
 
-socket.onmessage = function(event) {
-  document.getElementById('state').innerText = event.data;
-};
+"""
+GLOBALS
+"""
+APPLE_BUNDLES = {
+    "com.apple.TVMusic": {
+        "id": "com.apple.Music",
+        "name": "Apple Music"
+    },
+    "com.apple.TVWatchList": {
+        "id": "com.apple.tv",
+        "name": "Apple TV+"
+    },
+    "com.apple.TVShows": {
+        "id": "com.apple.MobileStore"
+    },
+    "com.apple.TVMovies": {
+        "id": "com.apple.MobileStore"
+    },
+    "com.apple.TVPhotos": {
+        "id": "com.apple.Photos",
+        "name": "Apple Photos"
+    },
+    "com.apple.Arcade": {
+        "id": "com.apple.Arcade",
+        "name": "Apple Arcade"
+    },
+    "com.apple.podcasts": {
+        "id": "com.apple.podcasts",
+        "name": "Apple Podcasts"
+    }
+}
 
-socket.onclose = function(event) {
-  if (event.wasClean) {
-    document.getElementById('status').innerText = 'Connection closed cleanly!';
-  } else {
-    document.getElementById('status').innerText = 'Disconnected due to error!';
-  }
-  document.getElementById('state').innerText = "";
-};
-
-socket.onerror = function(error) {
-  document.getElementById('status').innerText = 'Failed to connect!';
-};
-</script>
-<div id="status">Connecting...</div>
-<div id="state"></div>
+"""
+CLASSES
 """
 
-routes = web.RouteTableDef()
+class PYATV:
+    def __init__(self,atv_app):
+        self.loop = asyncio.get_event_loop()
+        self.scanresults = []
+        self.get_protocols()
+        self.atv_app = atv_app
+    
+    async def on_get_scan(self,req,resp):
 
-APPLE_BUNDLES = {}
-APPLE_BUNDLES["com.apple.TVMusic"]      = "com.apple.Music"
-APPLE_BUNDLES["com.apple.TVWatchList"]  = "com.apple.tv"
-APPLE_BUNDLES["com.apple.TVShows"]   	= "com.apple.MobileStore"
-APPLE_BUNDLES["com.apple.TVMovies"]   	= "com.apple.MobileStore"
+        self.scanresults = await pyatv.scan(self.loop,timeout=5)
+        #print("Scan:",scan)
 
-class DeviceListener(pyatv.interface.DeviceListener, pyatv.interface.PushListener):
-    def __init__(self, app, identifier):
-        self.app = app
-        self.identifier = identifier
+        devices = []
+
+        for device in self.scanresults:
+            d = {
+                "name": device.name,
+                "model": device.device_info.model_str,
+                "os": f"{device.device_info.operating_system.name} {device.device_info.version}",
+                "identifier": device.identifier,
+                "address": str(device.address),
+                "services": [],
+            }
+            
+            for service in device.services:
+                s = {
+                    "name": service.protocol.name,
+                    "enabled": service.enabled,
+                    "password": service.requires_password
+                }
+                d["services"].append(s)
+
+            devices.append(d)
+
+        resp.media = {
+            "status": "OK",
+            "results": devices
+        }
+
+    async def on_get_pair(self,req,resp):
+        id = req.params["id"]
+        protocol = req.params["protocol"]
+        pin = req.params["pin"]
+        
+        if not pin:
+            resp.media = await self.send_pair_request(id,protocol)
+        else:
+            resp.media = await self.send_pair_pin(pin)
+
+    async def on_post_pair(self,req,resp):
+        data = await req.media
+        id = data["id"]
+        protocol = data["protocol"]
+        pin = data.get("pin")
+        
+        if not pin:
+            resp.media = await self.send_pair_request(id,protocol)
+        else:
+            resp.media = await self.send_pair_pin(pin)
+
+    async def on_post_connect(self,req,resp):
+        data = await req.media
+
+        try:
+            id = data["id"]
+            device = await self.get_device_by_id(id)
+        
+            if device:
+                
+                for protocol,cred in data["creds"].items():
+                    p = self.protocols[protocol]
+                    c = cred
+                    logging.info(f"Setting credentials for {p.name} on {device.name}")
+                    device.set_credentials(p,c)
+
+                atv = await pyatv.connect(device,self.loop)
+                await self.atv_app.add_atv(atv,id)
+                resp.media = {"status":"Connection successful!"}
+            else:
+                resp.media = {"status":"Connection failed, try pairing again."}
+        except Exception as e:
+            logging.exception("Connection failed")
+            resp.media = {"status":f"Connection failed: {str(e)}"}
+
+    async def send_pair_pin(self,pin):
+        logging.info(f"Sending code: {pin}")
+        try:
+            self.pairing.pin(pin)
+            await self.pairing.finish()
+            result = {
+                "status":"Pairing successful!",
+                "creds": self.pairing.service.credentials
+            }
+            return result
+        except Exception as e:
+            logging.exception("Pairing failed")
+            return {"status":f"Pairing failed: {str(e)}"}
+
+    async def send_pair_request(self,id,protocol):
+
+        atv = await self.get_device_by_id(id)
+        proto = self.protocols[protocol]
+
+        if atv:
+            logging.info(f"Begin pairing {atv.name} with {proto.name}")
+            self.pairing = await pyatv.pair(atv,proto,self.loop)
+            await self.pairing.begin()
+            return {"status": "Waiting for code..."}
+        else:
+            return {"status": "No ATV found with specified ID. Try scanning again."}
+
+    async def get_device_by_id(self,id):
+        
+        results = await pyatv.scan(self.loop,identifier=id)
+
+        if results:
+            return results[0]
+        else:
+            return None
+    
+    def get_protocols(self):
+        self.protocols = {}
+        for p in pyatv.const.Protocol:
+            self.protocols[p.name] = p
+
+class Listener(pyatv.interface.DeviceListener, pyatv.interface.PushListener):
+    def __init__(self,atv,id,update_callback):
+        self.atv = atv
+        self.id = id
+        self.update_callback = update_callback
 
     def connection_lost(self, exception: Exception) -> None:
         self._remove()
@@ -73,360 +187,316 @@ class DeviceListener(pyatv.interface.DeviceListener, pyatv.interface.PushListene
         self._remove()
 
     def _remove(self):
-        self.app["atv"].pop(self.identifier)
-        self.app["listeners"].remove(self)
-
-    def playstatus_update(self, updater, playstatus: pyatv.interface.Playing) -> None:
-        clients = self.app["clients"].get(self.identifier, [])
-        for client in clients:
-            atv = self.app["atv"].get(self.identifier)
-            status = output_playing(playstatus,atv.metadata.app)
-            asyncio.ensure_future(client.send_str(str(status)))
-
-    def playstatus_error(self, updater, exception: Exception) -> None:
+        #self.list.remove(self)
         pass
 
+    def playstatus_update(self, updater, playstatus):
+        asyncio.ensure_future(self.update_callback(playstatus,self.atv,self.id))
 
-def web_command(method):
-    async def _handler(request):
-        device_id = request.match_info["id"]
-        atv = request.app["atv"].get(device_id)
-        if not atv:
-            return web.Response(text=f"Not connected to {device_id}", status=500)
-        return await method(request, atv)
+    def playstatus_error(self, updater, exception: Exception):
+        pass
 
-    return _handler
+class ATV:
+    def __init__(self):
+        self.loop = asyncio.get_event_loop()
+        self.atv_list = {}
+        self.app_icon_store = {}
+        self.ws_clients = []
 
+    async def on_websocket_ws(self,req,ws,id):
+        logging.info(f"WS request for {id}")
+        _ws = {
+            "id": id,
+            "ws": ws
+        }
+        self.ws_clients.append(_ws)
+        await ws.accept()
 
-def add_credentials(config, query):
-    for service in config.services:
-        proto_name = service.protocol.name.lower()
-        if proto_name in query:
-            config.set_credentials(service.protocol, query[proto_name])
+        #Try to send state on connection
+        try:
+            atv = self.get_atv(id)
+            state = await self.parse_metadata(atv)
+            await ws.send_media(state)
+        except Exception as e:
+            logging.exception(f"Couldn't send state on WS: {str(e)}")
 
-
-def output(success: bool, error=None, exception=None, values=None):
-    """Produce output in intermediate format before conversion."""
-    now = datetime.datetime.now(datetime.timezone.utc).astimezone().isoformat()
-    result = {"result": "success" if success else "failure", "datetime": str(now)}
-    if error:
-        result["error"] = error
-    if exception:
-        result["exception"] = str(exception)
-        result["stacktrace"] = "".join(
-            traceback.format_exception(
-                type(exception), exception, exception.__traceback__
-            )
-        )
-    if values:
-        result.update(**values)
-    return json.dumps(result)
-
-
-def output_playing(playing: Playing, app: App):
-    """Produce output for what is currently playing."""
-
-    def _convert(field):
-        if isinstance(field, Enum):
-            return field.name.lower()
-        return field if field else "none"
-
-    commands = retrieve_commands(Playing)
-    values = {k: _convert(getattr(playing, k)) for k in commands}
-    if app:
-        values["app"] = app.name
-        values["app_id"] = app.identifier
-        values["app_icon"] = getAppIcon(app.identifier)
-    else:
-        values["app"] = "none"
-        values["app_id"] = "none"
-    return output(True, values=values)
-
-
-def getAppIcon(bundle_id):
-    """print("App icon request for: "+bundle_id)"""
-    url = "http://itunes.apple.com/lookup?bundleId="
-    if bundle_id in APPLE_BUNDLES:
-        bundle_id = APPLE_BUNDLES[bundle_id]
-    else:
-        bundle_id = bundle_id
-    url = url+bundle_id
-    """print("Calling url: "+url)"""
-    r = requests.get(url)
-    r = r.content
-    r = json.loads(r)
-    if r['resultCount'] == 0:
-        result = ''
-    else:
-        result = r['results'][0]['artworkUrl512']
-    return result
-
-@routes.get("/state/{id}")
-async def state(request):
-    return web.Response(
-        text=PAGE.replace("DEVICE_ID", request.match_info["id"]),
-        content_type="text/html",
-    )
-
-
-@routes.get("/scan")
-async def scan(request):
-    results = os.popen("atvscript scan").read()
-    return web.Response(text=results)
-
-@routes.get("/pair/{id}/{protocol}")
-#@web_command
-async def pair1(request):
-    proto1 = request.match_info["protocol"]
-    id = request.match_info["id"]
-    loop = asyncio.get_event_loop()
-    proto2 = eval("Protocol."+proto1)
-    global pairing
-    try:
-        atvs = await pyatv.scan(loop, timeout=30, identifier=id)
-        pairing = await pyatv.pair(atvs[0], proto2, loop)
-        await pairing.begin()
-    except Exception as ex:
-        return web.Response(text=f"Pairing Failed: Error: {ex}")
-    return web.Response(text=f"Successfully Sent Pair Request: {proto1}")
-
-@routes.get("/pair/{id}/{protocol}/{pin}")
-#@web_command
-async def pair2(request):
-    proto1 = request.match_info["protocol"]
-    #id = request.match_info["id"]
-    pin = request.match_info["pin"]
-    loop = asyncio.get_event_loop()
-    #proto2 = Protocol.proto1
-    try:
-        #atvs = await pyatv.scan(loop, timeout=30, identifier=id)
-        #pairing = await pyatv.pair(atvs[0], Protocol.proto1, loop)
-        pairing.pin(pin)
-        await pairing.finish()
-        creds = pairing.service.credentials
-        response = {"status":"Successfully paired with "+proto1,"protocol":proto1,"credentials":creds}
-    except Exception as ex:
-        return web.Response(text=f"Pairing Failed with pin {pin}: Error: {ex}")
-    return web.json_response(response)
-
-@routes.get("/connect/{id}")
-async def connect(request):
-    loop = asyncio.get_event_loop()
-    device_id = request.match_info["id"]
-    if device_id in request.app["atv"]:
-        return web.Response(text=f"Already connected to {device_id}")
-
-    results = await pyatv.scan(identifier=device_id, loop=loop)
-    if not results:
-        return web.Response(text="Device not found", status=500)
-
-    add_credentials(results[0], request.query)
-
-    try:
-        atv = await pyatv.connect(results[0], loop=loop)
-    except Exception as ex:
-        return web.Response(text=f"Failed to connect to device: {ex}", status=500)
-
-    listener = DeviceListener(request.app, device_id)
-    atv.listener = listener
-    atv.push_updater.listener = listener
-    atv.push_updater.start()
-    request.app["listeners"].append(listener)
-
-    request.app["atv"][device_id] = atv
-    return web.Response(text=f"Connected to device {device_id}")
-
-
-@routes.get("/remote_control/{id}/{command}")
-@web_command
-async def remote_control(request, atv):
-    try:
-        await getattr(atv.remote_control, request.match_info["command"])()
-    except Exception as ex:
-        return web.Response(text=f"Remote control command failed: {ex}")
-    return web.Response(text="OK")
-
-@routes.get("/remote_control/{id}/{command}/{action}")
-@web_command
-async def remote_control(request, atv):
-    try:
-        rawCmd = request.match_info["command"]
-        action = request.match_info["action"]
-        cmd = getattr(atv.remote_control, rawCmd)
-        act = 0
-        if action == "doubletap":
-            act = 1
-        elif action == "hold":
-            act = 2
-        finalCmd = await cmd(InputAction(act))
-    except Exception as ex:
-        return web.Response(text=f"Remote control command failed: {ex}")
-    return web.Response(text=f"OK")
-
-@routes.get("/set_volume/{id}/{level}")
-@web_command
-async def set_volume(request, atv):
-    try:
-        level = float(request.match_info["level"])
-        atv.audio.set_volume(level)
-    except Exception as ex:
-        return web.Response(text=f"Set volume command failed: {ex}")
-    return web.Response(text="OK")
-
-@routes.get("/playing/{id}")
-@web_command
-async def playing(request, atv):
-    try:
-        status = output_playing(await atv.metadata.playing(), atv.metadata.app)
+        while True:
+            try:
+                payload = await ws.receive_media()
+                logging.info(f"WS Inbound: {payload}")
+            except WebSocketDisconnected:
+                logging.exception("WS Disconnected")
+                self.ws_clients.remove(_ws)
+                return
         
-    except Exception as ex:
-        return web.Response(text=f"Remote control command failed: {ex}")
-    return web.Response(text=str(status))
 
-@routes.get("/playing/{id}/repeat")
-@web_command
-async def playing(request, atv):
-    try:
-        status = await atv.metadata.playing()
-    except Exception as ex:
-        return web.Response(text=f"Remote control command failed: {ex}")
-    return web.Response(text=str(status.repeat))
+    async def on_get_remote(self,req,resp):
+        resp.media = {"status":"OK"}
 
-@routes.get("/playing/{id}/shuffle")
-@web_command
-async def playing(request, atv):
-    try:
-        status = await atv.metadata.playing()
-    except Exception as ex:
-        return web.Response(text=f"Remote control command failed: {ex}")
-    return web.Response(text=str(status.shuffle))
+    async def on_post_remote(self,req,resp):
+        data = await req.media
+        id = data["id"]
+        command = data["command"]
+        action = data.get("action")
 
-@routes.get("/art/{id}/art.png")
-@web_command
-async def artwork(request, atv):
-    try:
-        status = await atv.metadata.artwork()
-    except Exception as ex:
-        return web.Response(text=f"Artwork get failed: {ex}")
+        try:
+            
+            atv = self.get_atv(id)
 
-    return web.Response(body=bytes(status.bytes))
+            if atv:
+                cmd = getattr(atv.remote_control, command)
 
-@routes.get("/art/{id}/art.jpg")
-@web_command
-async def artwork(request, atv):
-    try:
-        status = await atv.metadata.artwork()
-    except Exception as ex:
-        return web.Response(text=f"Artwork get failed: {ex}")
+                if action:
+                    act = getattr(pyatv.const.InputAction,action)
+                    await cmd(act)
+                else:
+                    await cmd()
 
-    return web.Response(body=bytes(status.bytes))
+                resp.media = {"status":"OK"}
+            else:
+                resp.media = {"status":"ATV not found or connected."}
 
-@routes.get("/art/{id}/stats")
-@web_command
-async def artstats(request, atv):
-    try:
-        status = await atv.metadata.artwork()
-    except Exception as ex:
-        return web.Response(text=f"Remote control command failed: {ex}")
-    return web.Response(text=str(status))
+        except Exception as e:
+            resp.media = {"status":f"Failed: {str(e)}"}
+        
+    async def on_get_artwork(self,req,resp,id):
+        atv = self.get_atv(id)
+        art = await atv.metadata.artwork()
+        resp.data = art.bytes
 
-@routes.get("/art/{id}/art")
-@web_command
-async def artwork0(request, atv):
-    #device_id = request.match_info["id"]
-    path = await atv.metadata.artwork()
-    #stat = web.Response(body=bytes(path.bytes))
-    bytes = path.bytes
-    #img = Image.open(io.BytesIO(bytes))
-    #with open
-    try:
-        encoded_string = base64.b64encode(bytes)
-        result = encoded_string.decode('utf-8')
-    except Exception as ex:
-        return web.Response(text=f"Artwork get failed: {ex}")
-    return web.Response(text=str(result))
+    async def on_get_apps(self,req,resp,id):
+        atv = self.get_atv(id)
+        #load = req.params.get("load")
 
-@routes.get("/app/{id}")
-@web_command
-async def artstats(request, atv):
-    try:
-        status = atv.metadata.app
-    except Exception as ex:
-        return web.Response(text=f"Remote control command failed: {ex}")
-    return web.Response(text=str(status))
+        if atv:
+            app_list = await atv.apps.app_list()
+            apps = []
+            for app in app_list:
+                a = self.get_app(app)
+                apps.append(a)
 
-@routes.get("/app_list/{id}")
-@web_command
-async def app_list(request, atv):
-    apps = atv.apps
-    try:
-        app_list = await apps.app_list()
-        data = {}
-        data["Apps"] = {}
-        for app in app_list:
-            data["Apps"][app.name] = app.identifier
-    except Exception as ex:
-        return web.Response(text=f"failed listing apps: error: {ex}")
-    return web.json_response(data)
+            data = {
+                "status": "OK",
+                "apps": apps
+            }
+            resp.media = data
 
-@routes.get("/launch_app/{id}/{app_id}")
-@web_command
-async def launch_app(request, atv):
-    app_id = request.match_info["app_id"]
-    apps = atv.apps
-    try:
-        status = await apps.launch_app(app_id)
-    except Exception as ex:
-        return web.Response(text=f"failed launching {app_id}: error: {ex}")
-    return web.Response(text=f"Launched app: {app_id}")
+        else:
+            resp.media = {"status":"ATV not found or connected."}
 
-@routes.get("/close/{id}")
-@web_command
-async def close_connection(request, atv):
-    atv.close()
-    return web.Response(text="OK")
+    async def on_get_users(self,req,resp,id):
+        atv = self.get_atv(id)
+
+        if atv:
+            user_list = await atv.user_accounts.account_list()
+            users = []
+            for user in user_list:
+                u = {
+                    "name": user.name,
+                    "id": user.identifier
+                }
+                users.append(u)
+
+            data = {
+                "status": "OK",
+                "users": users
+            }
+            resp.media = data
+
+        else:
+            resp.media = {"status":"ATV not found or connected."}
+
+    async def on_post_users(self,req,resp,id):
+        data = await req.media
+        id = data["id"]
+        userId = data["userId"]
+        atv = self.get_atv(id)
+
+        if atv:
+            await atv.user_accounts.switch_account(userId)
+            resp.media = {"status":"User switched!"}
+
+        else:
+            resp.media = {"status":"ATV not found or connected."}
+
+    async def on_post_app_launch(self,req,resp,id=None):
+        data = await req.media
+        id = data["id"]
+        appId = data["appId"]
+        atv = self.get_atv(id)
+
+        logging.info(f"Launch app: {appId}")
+
+        try:
+            await atv.apps.launch_app(appId)
+            resp.media = {"status":"App successfully launched!"}
+        except Exception as e:
+            logging.exception("App failed to launch")
+            resp.media = {"status":"App failed to launch"}
+
+    async def on_get_info(self,req,resp,id):
+        atv = self.get_atv(id)
+        if atv:
+            data = await self.parse_metadata(atv)
+            resp.media = data
+        else:
+            resp.media = {"status":"ATV not connected"}
+
+    async def add_atv(self,atv:pyatv.interface.AppleTV,id):
+        logging.info(f"Adding ATV...")
+        listener = Listener(atv,id,self.atv_listener_callback)
+
+        #atv.listener = listener
+        atv.push_updater.listener = listener
+        atv.push_updater.start()
+        self.atv_list[id] = listener
+
+    async def atv_listener_callback(self,data,atv,id):
+        data = await self.parse_metadata(atv,data)
+        for client in self.ws_clients:
+            logging.info(f"Client: {client}")
+            if id == client["id"]:
+                await client["ws"].send_media(data)
+
+    async def parse_metadata(self,atv:pyatv.interface.AppleTV,data=None):
+        metadata = {}
+
+        if not data:
+            if not atv:
+                return {"status":"ATV not connected","connected":False}
+            media = await atv.metadata.playing()
+            metadata = media
+        else:
+            metadata = data
+            
+        art = await atv.metadata.artwork()
+
+        media = {
+            "album": metadata.album,
+            "artist": metadata.artist,
+            "title": metadata.title,
+            "genre": metadata.genre,
+            "position": metadata.position,
+            "total_time": metadata.total_time,
+            "shuffle": metadata.shuffle.name,
+            "repeat": metadata.repeat.name,
+            "content_identifier": metadata.content_identifier,
+            "series_name": metadata.series_name,
+            "season_number": metadata.season_number,
+            "episode_number": metadata.episode_number,
+            "hash": metadata.hash,
+            "media_type": metadata.media_type.name,
+            "state": metadata.device_state.name,
+            "artwork": True if art else False
+        }
+
+        """ app = {
+            "name": atv.metadata.app.name,
+            "identifier": atv.metadata.app.identifier,
+            "icon": self.get_icon(atv.metadata.app.identifier)
+        } """
+
+        app = self.get_app(atv.metadata.app)
+
+        state = {
+            "media": media,
+            "app": app
+        }
+
+        #logging.info(f"ATV State:\n{json.dumps(state,indent=2)}")
+
+        return state
+
+    def get_atv(self,id) -> pyatv.interface.AppleTV:
+        listener = self.atv_list.get(id)
+        if listener:
+            atv = listener.atv
+            return atv
+        else:
+            return None
+
+    def get_app(self,app):
+
+        if not app:
+            return None
+
+        a = {}
+        appId = app.identifier
+
+        if appId in APPLE_BUNDLES:
+            a = {
+                "name": APPLE_BUNDLES[appId].get("name") or app.name,
+                "id": APPLE_BUNDLES[appId].get("id") or app.identifier,
+            }
+            a["icon"] = self.get_icon(a["id"])
+        else:
+            a = {
+                "name": app.name,
+                "id": app.identifier,
+                "icon": self.get_icon(app.identifier)
+            }
+        return a
+
+    def get_icon(self,id):
+
+        icon_cache_path = "app_icon_store.json"
+        icon_cache_file = None
+        icon_cache = {}
+
+        if not os.path.exists(icon_cache_path):
+            icon_cache_file = open(icon_cache_path,"w")
+        else:
+            icon_cache_file = open(icon_cache_path,"r")
+            try:
+                icon_cache = json.load(icon_cache_file)
+            except:
+                logging.error(f"Failed to load JSON file. Will rebuild.")
+                icon_cache = {}
+            icon_cache_file = open(icon_cache_path,"w")
+
+        icon = icon_cache.get(id)
+
+        if not icon:
+            logging.info(f"Getting app icon for {id}")
+            url = f"http://itunes.apple.com/lookup?bundleId={id}"
+            resp = requests.get(url)
+            data = resp.json()
+
+            if data["resultCount"] > 0:
+                icon = data["results"][0]["artworkUrl512"]
+                icon_cache[id] = icon
+            else:
+                icon = None
+            
+        icon_cache_file.write(json.dumps(icon_cache,indent=2))
+        icon_cache_file.close()
+
+        return icon
 
 
-@routes.get("/ws/{id}")
-@web_command
-async def websocket_handler(request, atv):
-    device_id = request.match_info["id"]
+"""
+SERVER SETUP
+"""
 
-    ws = web.WebSocketResponse()
-    await ws.prepare(request)
-    request.app["clients"].setdefault(device_id, []).append(ws)
+app = falcon.asgi.App()
+pyatv_atv = ATV()
+pyatv_app = PYATV(pyatv_atv)
 
-    status = output_playing(await atv.metadata.playing(), atv.metadata.app)
-    await ws.send_str(str(status))
+app.add_route("/scan",pyatv_app,suffix="scan")
+app.add_route("/pair",pyatv_app,suffix="pair")
+app.add_route("/connect",pyatv_app,suffix="connect")
+app.add_route("/remote",pyatv_atv,suffix="remote")
+app.add_route("/artwork/{id}/art.png",pyatv_atv,suffix="artwork")
+app.add_route("/users/{id}",pyatv_atv,suffix="users")
+app.add_route("/apps/{id}",pyatv_atv,suffix="apps")
+app.add_route("/app_launch",pyatv_atv,suffix="app_launch") # Migrate to /apps?
+app.add_route("/info/{id}",pyatv_atv,suffix="info")
+app.add_route("/ws/{id}",pyatv_atv,suffix="ws")
 
-    async for msg in ws:
-        if msg.type == WSMsgType.TEXT:
-            # Handle custom commands from client here
-            if msg.data == "close":
-                await ws.close()
-        elif msg.type == WSMsgType.ERROR:
-            print(f"Connection closed with exception: {ws.exception()}")
-
-    request.app["clients"][device_id].remove(ws)
-
-    return ws
-
-
-async def on_shutdown(app: web.Application) -> None:
-    for atv in app["atv"].values():
-        atv.close()
-
-
-def main():
-    app = web.Application()
-    app["atv"] = {}
-    app["listeners"] = []
-    app["clients"] = {}
-    app.add_routes(routes)
-    app.on_shutdown.append(on_shutdown)
-    listen_port = 8080
-    web.run_app(app, port=listen_port)
-
+async def main():
+    config = uvicorn.Config("pyatv-web:app",host="0.0.0.0", port=8080, log_level="error")
+    server = uvicorn.Server(config)
+    await server.serve()
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())

@@ -1,6 +1,6 @@
--- Copyright 2021 Snap One, LLC. All rights reserved.
+-- Copyright 2023 Snap One, LLC. All rights reserved.
 
-COMMON_URL_VER = 23
+COMMON_URL_VER = 25
 
 JSON = require ('drivers-common-public.module.json')
 
@@ -344,7 +344,7 @@ function ProcessResponse (strData, responseCode, tHeaders, strError, info)
 	if (success == true) then
 		return (ret)
 	elseif (success == false) then
-		MetricsHandler:SetCounter ('Error_Callback')
+		MetricsURL:SetCounter ('Error_Callback')
 		print ('URL response callback error: ', ret, info.URL)
 	end
 end
@@ -368,6 +368,10 @@ function urlDo (method, url, data, headers, callback, context, options)
 	headers = CopyTable (headers) or {}
 
 	data = data or ''
+
+	if (USER_AGENT == nil) then
+		USER_AGENT = 'Control4/' .. C4:GetVersionInfo ().version .. '/' .. C4:GetDriverConfigInfo ('model') .. '/' .. C4:GetDriverConfigInfo ('version')
+	end
 
 	if (headers ['User-Agent'] == nil) then
 		headers ['User-Agent'] = USER_AGENT

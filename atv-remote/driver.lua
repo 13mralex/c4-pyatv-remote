@@ -6,18 +6,12 @@ do	--Globals
 	EC = EC or {}
 	MSP = {}
 	PYATV = {}
-	artwork_info = {}
-	g_data = {}
 	Timer = Timer or {}
-	playstate = ""
-	already_started = "no"
-	device_array = {}
-	device_list = {}
-	device_list["state"] = "initial"
-	device_id = {}
-	current_pairing_device = {}
+	DeviceList = {}
+	PairingDevice = {}
+	USER_LIST = {}
+	WS = nil
 	init = "fresh"
-	oldDashboardInfo = {}
 
 	MSP_PROXY = 5001
 	PASSTHROUGH_PROXY = 5001		-- set this to the proxy ID that should handle all passthrough commands from minidrivers
@@ -73,382 +67,400 @@ do	--Globals
 		['YouTube']			= 'com.google.ios.youtube',
 		['Pandora']			= 'com.pandora',		  -- Returned as no name
 	} --['C4 Mini App Name']    = 'ATV App ID'             -- ATV App List output to Lua Output window by turning on Debug Mode and run Test Connection in actions.
-	
-	APPLE_BUNDLES = {}
-	APPLE_BUNDLES["name"] = {
-	   ["com.apple.Arcade"]			= "Apple Arcade",
-	   ["com.apple.TVAppStore"]		= "App Store",
-	   ["com.apple.TVHomeSharing"]	= "Home Sharing",
-	   ["com.apple.TVMovies"]		= "iTunes Movies",
-	   ["com.apple.TVMusic"]			= "Apple Music",
-	   ["com.apple.TVPhotos"]		= "Photos",
-	   ["com.apple.podcasts"]		= "Apple Podcasts",
-	   ["com.apple.TVSearch"]		= "Search",
-	   ["com.apple.TVSettings"]		= "Settings",
-	   ["com.apple.TVWatchList"]		= "Apple TV+",
-	   ["com.apple.TVShows"]			= "iTunes Shows",
-     }
-	APPLE_BUNDLES["iOS Bundle"] = {
-	   ["com.apple.TVMusic"]			= "com.apple.Music",
-	   ["com.apple.TVSearch"]		= "com.apple.tv",
-	   ["com.apple.TVWatchList"]		= "com.apple.tv",
-	   ["com.apple.TVShows"]			= "com.apple.tv",
-     }
 
 end
 
-function dbg (strDebugText, ...)
-	if (DEBUGPRINT) then print (os.date ('%x %X : ')..(strDebugText or ''), ...) end
-end
+--WEBSOCKET
 
 function PYATV.ConnectWebsocket()
 
-     wsURL = "ws://"..Properties["Server IP"]..":"..Properties["Server Port"].."/ws/"..Properties["Device ID"]	
-	--PersistData["ATVSocket"] = PersistData["ATVSocket"] or "none"
+    wsURL = "ws://"..Properties["Server Address"].."/ws/"..PersistData.DeviceID
 	
 	dbg("Starting Websocket: "..wsURL)
 	
-     if (PersistData["ATVSocket"]) then
-		PersistData["ATVSocket"]:delete ()
+    if (WS) then
+		WS:delete()
 	end
-	PersistData["ATVSocket"] = WebSocket:new (wsURL)
+	WS = WebSocket:new(wsURL)
 
-	local pm = function (self, data)
-		dbg ('WS Message Received: ' .. data)
+	local pm = function(self, data)
+		dbg('WS Message Received: ' .. data)
 		PYATV.WSDataReceived(data)
 	end
 
-	PersistData["ATVSocket"]:SetProcessMessageFunction (pm)
-
-	local est = function (self)
-		dbg ('ws connection established')
-		PYATV.ConnectionState(true)
+	local est = function(self)
+		dbg('ws connection established')
 	end
 
-	local offline = function (self)
-		dbg ('ws connection established')
-		PYATV.ConnectionState(false)
+	local offline = function(self)
+		dbg('ws connection offline')
+		dbg("Attempt reconnect in 5 seconds...")
+		C4:SetTimer(5000, function(timer)
+			PYATV.ConnectWebsocket()
+			timer:Cancel()
+		end, true)
 	end
 
-	PersistData["ATVSocket"]:SetEstablishedFunction (est)
-	PersistData["ATVSocket"]:SetOfflineFunction (offline)
-
-	local closed = function (self)
-		dbg ('ws connection closed by remote host')
-		PYATV.ConnectionState(false)
+	local closed = function(self)
+		dbg('ws connection closed by remote host')
 	end
 
-	PersistData["ATVSocket"]:SetClosedByRemoteFunction (closed)
+	WS:SetProcessMessageFunction(pm)
+	WS:SetEstablishedFunction(est)
+	WS:SetOfflineFunction(offline)
+	WS:SetClosedByRemoteFunction(closed)
 
-
-	PersistData["ATVSocket"]:Start ()
+	WS:Start ()
 
 end
 
 function PYATV.WSDataReceived(data)
-
     dbg("---WS Data received---")
 
-    --array = JSON:decode(data)
-    
-    PYATV.ProcessData(data,"ws")
-
+    jsonData = JSON:decode(data)
+	if (jsonData.connected == false) then
+		PYATV.ConnectDevice()
+	else
+    	PYATV.MediaCallback(jsonData,nil,"ws")
+	end
 end
 
-function PYATV.ConnectionState(state)
+--HELPERS
 
-    if (state) then
-	   state = "connected"
-    else
-	   state = "disconnected"
-    end
-
-    dbg("Websocket connection state changed: "..state)
-
+function dbg(strDebugText, ...)
+	if (DEBUGPRINT) then print (os.date ('%x %X : ')..(strDebugText or ''), ...) end
 end
 
-function PYATV.ProcessData(data,source)
-
-    	array = JSON:decode(data)
-	
-	dbg("---Begin data process---")
-	dbg("Data array: "..data)
-
-	if (array["device_state"] ~= "idle") then
-		imageURL = "http://"..Properties["Server IP"]..":"..Properties["Server Port"].."/art/"..Properties["Device ID"].."/art.png"
-		
-		if (array["hash"] ~= nil) then
-		     hash = C4:Base64Encode(array["datetime"])
-			imageURL = imageURL.."?"..hash
-			array["image"] = C4:Base64Encode(imageURL)
-		end
-		
-		array["ImageUrl"] = imageURL
-	end
-	if (array["app_id"]) then
-		array["app"] = APPLE_BUNDLES["name"][array["app_id"]] or array["app"] or nil
-		if (array["app"] == nil) then
-		  for name,id in pairs(APPLE_TV) do
-			 if (id == array["app_id"]) then
-				array["app"] = name
-			 end
-		  end
-	     end
-	end
-	if (init == "new") then
-		PYATV.preMakeImageList(array)
-	end
-	if (array["state"]) then
-		array["device_state"] = array["state"]
-	end
-	if (source == "proxy" or source == "ws") then
-		dbg ("Media request from "..source)
-		UpdateMediaInfo(array)
-		UpdateQueue(array)
-		UpdateDashboard(array,true)
-		UpdateProgress(array)
-	end
-
-	if (array["device_state"]) and (array["media_type"]) then
-		C4:SetVariable("Play State", array["device_state"])
-		C4:SetVariable("Media Type", array["media_type"])
-	end
-	if (array["app"]) then
-		C4:SetVariable("Service", array["app_id"])
-	end
-	dbg ("---Polling Complete---")
-
-
+function PYATV.UpdateStatus(status)
+	C4:UpdateProperty("Latest Status",status)
 end
 
+function PYATV.UrlCall(uri, callback, method, data, callbackData)
+	dbg ("---URL Call---")
+	method = method or "get"
+	local baseUrl = Properties["Server Address"]
+	local url = baseUrl..uri
+	dbg ("URL "..method..": "..url)
 
-function PYATV.ScanDevices () -- ORIGINAL: scan_devices
-    print ("---Scan Devices---")
-    url = Properties["Server IP"]..":"..Properties["Server Port"].."/scan"
-    dbg ("URL: "..url)
-	C4:urlGet(url, {}, false,
-		function(ticketId, strData, responseCode, tHeaders, strError)
-			if (strError == nil) then
-				--print ("Start ReceivedAsync")
-				array = JSON:decode(strData)
-				device_list = array["devices"]
-				devices = ""
-				num = 0
-				print ("---Devices Found---")
-				for k, v in pairs(array["devices"]) do
-					for x, y in pairs(v["services"]) do
-						p2 = PYATV.ConvertProtocol(y["protocol"])
-						if (p2 == "Companion") then
-							name = v["name"]
-							id = v["identifier"]
-							num = v
-							devices = devices..name..","
-							device_id[name] = k
-							print (name)
-							print ("..ID: "..id)
-							print (".."..p2..": "..y["port"])
+	if (method=="get") then
+		C4:urlGet(url, {}, false,
+			function(ticketId, strData, responseCode, tHeaders, strError)
+				if (strError == nil) then
+					strData = strData or ''
+					responseCode = responseCode or 0
+					tHeaders = tHeaders or {}
+					if (responseCode == 0) then
+						print("FAILED retrieving: "..url.." Error: "..strError)
+					end
+					if (strData == "") then
+						print("FAILED -- No Data returned")
+					end
+					if (responseCode == 200) then
+						dbg ("SUCCESS retrieving: "..url.." Response: "..strData)
+						local jsonData = JSON:decode(strData)
+						if (jsonData["status"]) then
+							PYATV.UpdateStatus(jsonData["status"])
+						end
+						if (callback) then
+							callback(jsonData,callbackData)
 						end
 					end
+				else
+					print("C4:urlGet() failed: "..strError)
 				end
-				print ("---Scan Complete---")
-				devices = devices:sub(1, -2)
-				device_list["state"] = "scanned"
-				C4:UpdatePropertyList("Device Selector", devices)
-			else
-				print("C4:urlGet() failed: "..strError)
 			end
-		end
-	)
+		)
+	elseif (method=="post") then
+		local postData = JSON:encode(data)
+		local headers = {
+			["Content-Type"] = "application/json"
+		}
+		dbg("Post data:",postData)
+		C4:urlPost(url, postData, headers, false,
+			function(ticketId, strData, responseCode, tHeaders, strError)
+				if (strError == nil) then
+					strData = strData or ''
+					responseCode = responseCode or 0
+					tHeaders = tHeaders or {}
+					if (responseCode == 0) then
+						print("FAILED retrieving: "..url.." Error: "..strError)
+					end
+					if (strData == "") then
+						print("FAILED -- No Data returned")
+					end
+					if (responseCode == 200) then
+						dbg ("SUCCESS retrieving: "..url.." Response: "..strData)
+						local jsonData = JSON:decode(strData)
+						if (jsonData["status"]) then
+							PYATV.UpdateStatus(jsonData["status"])
+						end
+						if (callback) then
+							callback(jsonData,callbackData)
+						end
+					end
+				else
+					print("C4:urlGet() failed: "..strError)
+				end
+			end
+		)
+	end
 end
 
-function PYATV.BeginPairing (name)  -- ORIGINAL: pair
+function PYATV.MigrateOldData()
+	--Migrate old server ip:port to address
+	local ip = Properties["Server IP"] or ""
+	local port = Properties["Server Port"] or ""
+	if (ip~="" and port~="") then
+		local address = ip..":"..port
+		C4:UpdateProperty("Server Address",address)
+		C4:UpdateProperty("Server IP","")
+		C4:UpdateProperty("Server Port","")
+	end
+
+	--Migrate ID
+	local id = Properties["Device ID"] or ""
+	if (id~="") then
+		PersistData["DeviceID"] = id
+		C4:UpdateProperty("Device ID","")
+	end
+
+	--Migrate credentials
+	local creds_ap = Properties["AirPlay Credentials"] or ""
+	local creds_cm = Properties["Companion Credentials"] or ""
+	if (not PersistData["creds"]) then
+		PersistData["creds"] = {}
+	end
+	if (creds_ap~="") then
+		PersistData["creds"]["AirPlay"] = creds_ap
+		C4:UpdateProperty("AirPlay Credentials","")
+	end
+	if (creds_cm~="") then
+		PersistData["creds"]["Companion"] = creds_cm
+		C4:UpdateProperty("Companion Credentials","")
+	end
+end
+
+--PAIRING
+
+function PYATV.ScanDevices(idBinding,tParams,callback)
+    print("---Scan Devices---")
+	PYATV.UpdateStatus("Scanning...")
+    
+	local function cb(data)
+		DeviceList = data["results"]
+		local devicesStr = ""
+
+		print ("---Devices Found---")
+
+		for i,device in orderedPairs(DeviceList) do
+			local name = device["name"]
+			print(name)
+			devicesStr = devicesStr..name..","
+		end
+
+		devicesStr = devicesStr:sub(1, -2)
+		
+		C4:UpdatePropertyList("Device Selector", devicesStr)
+		PYATV.UpdateStatus("Please select a device...")
+
+		--Used for navigators
+		if (callback) then
+			callback(idBinding,tParams,DeviceList)
+		end
+	end
+
+	PYATV.UrlCall("/scan",cb)
+end
+
+function PYATV.BeginPairing(deviceName)
 	print ("---Begin Pairing---")
-	if (device_list["state"]=="initial") then
-		print("Scanning not complete, please re-scan for devices.")
-	else
-		protocols = ""
-		x = device_id[name]
-		id = device_list[x]["identifier"]
-		current_pairing_device["name"] = name
-		current_pairing_device["id"] = id
-		print (name.." ID: "..id)
-		C4:UpdateProperty("Device ID", id)
-		for k,v in pairs(device_list[x]["services"]) do
-			protocol = PYATV.ConvertProtocol(v["protocol"])
-			if (protocol == "RAOP") then
-				-- do nothing for RAOP. Only after AirPlay and Companion protocols.
-			else
-				protocols = protocols..protocol..","
-			end
-		end
-		protocols = protocols:sub(1, -2)
-		--print ("Protocols: "..dump(protocols))
-		C4:UpdatePropertyList("Protocol to Pair", protocols)
-	end
-end
 
-function PYATV.PairProtocol (protocol)  -- ORIGINAL: pair2
-	print ("---Pairing with Protocol---")
-	name = current_pairing_device["name"]
-	id = current_pairing_device["id"]
-	current_pairing_device["protocol"] = protocol
-	print ("Begin protocol "..protocol.." pairing for "..name.." ("..id..")")
-	url = Properties["Server IP"]..":"..Properties["Server Port"].."/pair/"..id.."/"..protocol
-	dbg ("Calling URL: "..url)
-	C4:urlGet(url, {}, false,
-		function(ticketId, strData, responseCode, tHeaders, strError)
-			if (strError == nil) then
-				-- nothing to do
-			else
-				print("C4:urlGet() failed: "..strError)
-			end
-		end
-	)
-end
-
-function PYATV.PairWithPIN (pin)  -- ORIGINAL: pair3
-	print ("---Pairing With PIN---")
-	name = current_pairing_device["name"] or ''
-	id = current_pairing_device["id"] or ''
-	protocol = current_pairing_device["protocol"] or ''
-	if (id == "") and (protocol == "") and (name == "") then
-		return --silently stop pairing with pin, something went wrong..
-	end
-	--print ("Sending PIN "..pin.." to "..name)
-	url = Properties["Server IP"]..":"..Properties["Server Port"].."/pair/"..id.."/"..protocol.."/"..pin
-	dbg ("URL: "..url)
-	C4:urlGet(url, {}, false,
-		function(ticketId, strData, responseCode, tHeaders, strError)
-			if (strError == nil) then
-				dbg ("Result: "..strData)
-				array = JSON:decode(strData)
-				dbg ("Result: "..array["status"])
-				dbg ("---UPDATING "..array["protocol"].." Credentials".." TO value"..array["credentials"])
-				dbg ("------")
-				C4:UpdateProperty(array["protocol"].." Credentials", array["credentials"])
-				C4:UpdateProperty("Pairing Code", "")
-				C4:UpdateProperty("Protocol to Pair", "")
-				PYATV.ConnectDevice()
-			else
-				print("C4:urlGet() failed: "..strError)
-			end
-		end
-	)
-end
-
-function PYATV.ConnectDevice () -- ORIGINAL: connect_device
-	print ("---Connect Device---")
-	airplay_creds = Properties["AirPlay Credentials"] or nil
-	companion_creds = Properties["Companion Credentials"] or nil
-	name = Properties["Device Selector"] or nil
-	id = Properties["Device ID"] or nil
-	if (airplay_creds == "") and (companion_creds == "") then
-		print("No credentials found")
+	if (init~="idle") then
+		dbg("Halted pairing, driver is still init...")
 		return
 	end
-	if (airplay_creds == "") then
-		url = Properties["Server IP"]..":"..Properties["Server Port"].."/connect/"..id.."?companion="..companion_creds
-	elseif (companion_creds == "") then
-		url = Properties["Server IP"]..":"..Properties["Server Port"].."/connect/"..id.."?airplay="..airplay_creds
-	else
-		url = Properties["Server IP"]..":"..Properties["Server Port"].."/connect/"..id.."?airplay="..airplay_creds.."&companion="..companion_creds
+
+	PairingDevice = {}
+
+	for i,d in ipairs(DeviceList) do
+		local name = d["name"]
+		if (deviceName==name) then
+			PairingDevice = d
+			dbg("Got device info for "..name)
+			break
+		end
 	end
-	print ("Connecting to "..name)
-	C4:urlGet(url, {}, false,
-		function(ticketId, strData, responseCode, tHeaders, strError)
-			if (strError == nil) then
-				print ("Result: "..strData)
-				PYATV.GetAppList()
-			else
-				print("C4:urlGet() failed: "..strError)
-			end
+
+	local protocolList = PairingDevice["services"]
+	local protocols = ","
+
+	for i,p in ipairs(protocolList) do
+		local protocol = p["name"]
+		local enabled = p["enabled"]
+
+		if (enabled) then
+			protocols = protocols..protocol..","
 		end
-	)
+	end
+
+	protocols = protocols:sub(1, -2)
+
+	C4:UpdatePropertyList("Protocol to Pair", protocols)
+	PYATV.UpdateStatus("Please select a protocol...")
 end
 
-function PYATV.GetAppList ()
+function PYATV.PairProtocol(protocol)
+	print ("---Pairing with Protocol---")
+
+	if (init~="idle") then
+		dbg("Halted pairing, driver is still init...")
+		return
+	end
+	
+	local deviceId = PairingDevice["identifier"]
+	local data = {
+		id = deviceId,
+		protocol = protocol
+	}
+
+	PYATV.UrlCall("/pair",nil,"post",data)
+end
+
+function PYATV.PairWithPIN(pin)
+	print ("---Pairing With PIN---")
+
+	if (init~="idle") then
+		dbg("Halted pairing, driver is still init...")
+		return
+	end
+	
+	local deviceId = PairingDevice["identifier"]
+	local protocol = Properties["Protocol to Pair"]
+	local data = {
+		id = deviceId,
+		protocol = protocol,
+		pin = pin
+	}
+
+	PYATV.UrlCall("/pair",PYATV.PairingComplete,"post",data)
+end
+
+function PYATV.PairingComplete(data)
+
+	if (init~="idle") then
+		dbg("Halted pairing, driver is still init...")
+		return
+	end
+
+	local protocol = Properties["Protocol to Pair"]
+	local creds = data["creds"]
+
+	if (not PersistData["creds"]) then
+		PersistData["creds"] = {}
+	end
+
+	PersistData["creds"][protocol] = creds
+	PersistData["DeviceID"] = PairingDevice["identifier"]
+	C4:UpdateProperty("Protocol to Pair", "")
+	C4:UpdateProperty("Pairing Code","")
+end
+
+function PYATV.ConnectDevice()
+	print ("---Connect Device---")
+
+	PYATV.ConnectWebsocket()
+
+	local data = {
+		id = PersistData["DeviceID"],
+		creds = PersistData["creds"]
+	}
+
+	PYATV.UrlCall("/connect",nil,"post",data)
+	PYATV.GetAppList()
+	PYATV.GetUserList()
+end
+
+--APPS
+
+function PYATV.GetAppList()
 	dbg ("---Get App List---")
-	if (Properties["Device ID"] == "") then
-		print("Not connected to Device")
-	end	
-	url = Properties["Server IP"]..":"..Properties["Server Port"].."/app_list/"..Properties["Device ID"]
-	C4:urlGet(url, {}, false,
-		function(ticketId, strData, responseCode, tHeaders, strError)
-			if (strError == nil) then
-				dbg ("App List Results: ")
-				dbg (strData)
-				array = JSON:decode(strData)
-				for k, v in pairs(array["Apps"]) do
-					APP_LIST[tostring(k)] = tostring(v)
-				end
-			else
-				print("C4:urlGet() failed: "..strError)
-			end
+
+	APP_LIST = {}
+
+	local function cb(data)
+		for i,app in pairs(data.apps) do
+			APP_LIST[app.name] = {
+				id = app.id,
+				icon = app.icon
+			}
 		end
-	)
+	end
+	
+	local uri = "/apps/"..PersistData.DeviceID
+	PYATV.UrlCall(uri,cb)
+
 end
 
-function PYATV.SendCommand (url) -- ORIGINAL: call_ip
-	dbg ("---Send Command---")
-	dbg ("URL: "..url)
-	C4:urlGet(url, {}, false,
-		function(ticketId, strData, responseCode, tHeaders, strError)
-			if (strError == nil) then
-				strData = strData or ''
-				responseCode = responseCode or 0
-				tHeaders = tHeaders or {}
-				if (responseCode == 0) then
-					print("FAILED retrieving: "..url.." Error: "..strError)
-				end
-				if (strData == "") then
-					print("FAILED -- No Data returned")
-				end
-				if (responseCode == 200) then
-					dbg ("SUCCESS retrieving: "..url.." Response: "..strData)
-				end
-			else
-				print("C4:urlGet() failed: "..strError)
-			end
-		end
-	)
+function PYATV.LaunchApp(appId)
+	local data = {
+		id = PersistData["DeviceID"],
+		appId = appId
+	}
+
+	PYATV.UrlCall("/app_launch",nil,"post",data)
 end
 
-function PYATV.RemoteCommand (cmd) -- ORIGINAL: remote
+--USERS
+
+function PYATV.GetUserList()
+	dbg ("---Get User List---")
+
+	local function cb(data)
+		USER_LIST = data.users
+	end
+	
+	local uri = "/users/"..PersistData.DeviceID
+	PYATV.UrlCall(uri,cb)
+
+end
+
+function PYATV.SwitchUser(userId)
+	local data = {
+		id = PersistData["DeviceID"],
+		userId = userId
+	}
+
+	PYATV.UrlCall("/users/",nil,"post",data) --the trailing slash is important
+end
+
+--REMOTE
+
+function PYATV.RemoteCommand(cmd,action)
 	dbg ("---Remote Command---")
 	dbg ("CMD: "..cmd)
-	url = Properties["Server IP"]..":"..Properties["Server Port"].."/remote_control/"..Properties["Device ID"].."/"..cmd
-	dbg ("URL: "..url)
-	C4:urlGet(url, {}, false,
-		function(ticketId, strData, responseCode, tHeaders, strError)
-			if (strError == nil) then
-				strData = strData or ''
-				responseCode = responseCode or 0
-				tHeaders = tHeaders or {}
-				if (responseCode == 0) then
-					print("FAILED retrieving: "..url.." Error: "..strError)
-				end
-				if (strData == "") then
-					print("FAILED -- No Data returned")
-				end
-				if (responseCode == 200) then
-					dbg ("SUCCESS retrieving: "..url.." Response: "..strData)
-				end
-			else
-				print("C4:urlGet() failed: "..strError)
-			end
-		end
-	)
+
+	--top menu does not accept action parameter
+	if (cmd=="top_menu" and action=="Hold") then
+		cmd = "home_hold"
+		action = nil
+	end
+	
+	local data = {
+		id = PersistData["DeviceID"],
+		command = cmd,
+		action = action
+	}
+
+	PYATV.UrlCall("/remote",nil,"post",data)
 end
 
-function PYATV.RemoteCommandHold (cmd,action) -- ORIGINAL: remote
+function PYATV.RemoteCommandHold(cmd,action)
 	dbg ("---Remote Command (Hold)---")
 	dbg ("CMD: "..cmd)
 	cmd = string.match(cmd,"start_(.*)") or string.match(cmd,"stop_(.*)") or cmd
-	url = Properties["Server IP"]..":"..Properties["Server Port"].."/remote_control/"..Properties["Device ID"].."/"..cmd.."/hold"
-	--dbg ("URL: "..url)
+	dbg ("CMD new: "..cmd)
 	
 	if (action == "start") then
-
 	   dbg("Starting hold timer...")
 	   PYATV.RemoteCommand(cmd)
 	   Timer["holdAction"] = C4:SetTimer(100, function(timer)
@@ -459,125 +471,154 @@ function PYATV.RemoteCommandHold (cmd,action) -- ORIGINAL: remote
 						     end
 						end, true)
 	
-     elseif (action == "sendCmd") then
+    elseif (action == "sendCmd") then
 	   
-	   dbg("Sending hold cmd with url: "..url)
-	
-	   C4:urlGet(url, {}, false,
-		    function(ticketId, strData, responseCode, tHeaders, strError)
-			    if (strError == nil) then
-				    strData = strData or ''
-				    responseCode = responseCode or 0
-				    tHeaders = tHeaders or {}
-				    if (responseCode == 0) then
-					    print("FAILED retrieving: "..url.." Error: "..strError)
-				    end
-				    if (strData == "") then
-					    print("FAILED -- No Data returned")
-				    end
-				    if (responseCode == 200) then
-					    dbg ("SUCCESS retrieving: "..url.." Response: "..strData)
-				    end
-			    else
-				    print("C4:urlGet() failed: "..strError)
-			    end
-		    end
-	    )
-     elseif (action == "stop") then
-	   dbg("Stopping hold timer...")
-	   Timer["holdAction"] = "stop"
-     end
+		PYATV.RemoteCommand(cmd,"Hold")
 	   
-end
-
-function PYATV.pollMediaInfo (source, navId, roomId, seq) --pollMediaInfo
-	url = Properties["Server IP"]..":"..Properties["Server Port"].."/playing/"..Properties["Device ID"]
-	dbg ("---Poll Media---")
-	dbg ("URL: "..url)
-	C4:urlGet(url, {}, false,
-		function(ticketId, strData, responseCode, tHeaders, strError)
-			if (strError == nil) then
-				--array = ConvertToArray(strData)
-				PYATV.ProcessData(strData,source)
-			else
-				print("C4:urlGet() failed: "..strError)
-			end
-		end
-	)
-end
-
-function PYATV.MakeImageList(strData,array)
-
-    	a = strData:match("',%s(.*)")
-	if (a ~= nil) then
-		b = a:match("',%s(.*)")
-		c,d = b:match("([^,]+),([^,]+)")
-		d = d:sub(1, -2)
-		e = c:match("=(.*)")
-		f = d:match("=(.*)")
-		art_url = "http://"..Properties["Server IP"]..":"..Properties["Server Port"].."/art/"..Properties["Device ID"].."/art.png"
-		art_url = art_url.."?"..C4:Base64Encode(array["datetime"])
-		artwork_info["width"] = e
-		artwork_info["height"] = f
-		artwork_info["url"] = art_url
-     end
-
-end
-
-function PYATV.preMakeImageList(array) -- ORIGINAL: preMakeImageList
-	dbg ("---preMakeImageList---")
-	url = Properties["Server IP"]..":"..Properties["Server Port"].."/art/"..Properties["Device ID"].."/stats"
-	dbg ("URL: "..url)
-	C4:urlGet(url, {}, false,
-		function(ticketId, strData, responseCode, tHeaders, strError)
-			if (strError == nil) then
-				PYATV.MakeImageList(strData,array)
-			else
-				print("C4:urlGet() failed: "..strError)
-			end
-		end
-	)
-end
-
-function PYATV.ConvertProtocol (p) -- ORIGINAL: convertProtocol
-    p2 = ""
-    if (p == "mrp") then
-        p2 = "MRP"
-    elseif (p == "airplay") then
-        p2 = "AirPlay"
-    elseif (p == "companion") then
-        p2 = "Companion"
-    elseif (p == "raop") then
-        p2 = "RAOP"
-    elseif (p == "dmap") then
-        p2 = "DMAP"
-    else
-        print("Protocol mismatch: "..p)
+    elseif (action == "stop") then
+		dbg("Stopping hold timer...")
+	    Timer["holdAction"] = "stop"
     end
-    return p2
+	   
 end
 
-function PYATV.RefreshInterval (cmd) -- ORIGINAL: RefreshInterval
-	dbg ("---Refresh Interval---")
-	--timer0 = nil
-	    if (cmd == "start" and already_started == "no") then
-		    if (already_started == "no") then
-			    already_started = "yes"
-		    end
-		    C4:SetTimer(1000, function(timer)
-			    PYATV.pollMediaInfo()
-			    if (already_started == "no") then
-				    timer:Cancel()
-				    dbg ("Stopping timer.")
-			    end
-		    end, true)
-		    dbg ("Starting timer.")
-	    elseif (cmd == "stop" and Properties["Poll Device"] == "Only when on") then
-		    already_started = "no"
-		    dbg ("Stopping timer.")
-	    else
-	    end
+--MEDIA GENERATION
+
+function PYATV.GenerateMediaInfo(data)
+
+	local media = data.media
+
+	local imgUrl = nil
+
+	if (data.media.artwork) then
+		imgUrl = "http://"..Properties["Server Address"].."/artwork/"..PersistData.DeviceID.."/art.png?"..os.time() or ""
+	end
+
+	local args = {
+        TITLE = media.title or data.app.name,
+        ALBUM = media.album,
+        ARTIST = media.artist,
+        GENRE = media.genre,
+        IMAGEURL = C4:Base64Encode(imgUrl)
+    }
+    
+    C4:SendToProxy(5001, "UPDATE_MEDIA_INFO", args, "COMMAND", true)
+
+	local state = media.state or ""
+	local mediaType = media.media_type or ""
+	local service = data.app.name or ""
+
+	C4:SetVariable("Play State", string.lower(state))
+	C4:SetVariable("Media Type", string.lower(mediaType))
+	C4:SetVariable("Service", service)
 end
+
+function PYATV.GenerateDashboard(idBinding,tParams,data)
+    local possibleItems = {
+        "Play",
+        "Pause",
+        "Stop",
+        "SkipFwd",
+        "SkipRev"
+    }
+
+	dbg("Generate dashboard...")
+
+	local state = data.media.state
+	local items = ""
+	
+	--Eventually more logic for stop button
+	if (state=="Playing") then
+		items = "SkipRev Pause SkipFwd"
+	else
+		items = "SkipRev Play SkipFwd"
+	end
+
+    local dashboardInfo = {
+		Items = items
+	}
+
+	dbg("Final dashboard data:\n"..dump(dashboardInfo))
+
+	SendEvent(5001, nil, nil, "DashboardChanged", dashboardInfo) -- Logic needed for tParams? nil placeholder for now
+end
+
+function PYATV.GenerateQueue(idBinding,tParams,data)
+
+	dbg("Generate queue...")
+
+	local title = data.media.title
+	local artist = data.media.artist
+	local imgUrl = nil
+
+	if (data.media.artwork) then
+		imgUrl = "http://"..Properties["Server Address"].."/artwork/"..PersistData.DeviceID.."/art.png?"..os.time() or ""
+	end
+
+	local appName = data.app.name
+	local appIcon = data.app.icon or ""
+
+	local q = "<List>"
+
+	if (title or artist) then
+		q = q.."<item><title>"..XMLEncode(title or '').."</title>"
+		q = q.."<subtitle>"..XMLEncode(artist or '').."</subtitle>"
+		q = q.."<image_list>"..imgUrl.."</image_list></item>"
+	end
+	
+	if (appName) then
+		q = q.."<item><title>Service</title><isHeader>true</isHeader></item>"
+		q = q.."<item><title>"..XMLEncode(data.app.name).."</title>"
+		q = q.."<image_list>"..appIcon.."</image_list></item>"
+	end
+
+	q = q.."</List>"
+
+	dbg("Final queue data:\n"..q)
+
+	SendEvent(5001, nil, nil, "QueueChanged", q) -- Logic needed for tParams? nil placeholder for now
+end
+
+function PYATV.GetMedia(source,idBinding,tParams)
+	local uri = "/info/"..PersistData.DeviceID
+	local cbData = {
+		source = source,
+		idBinding = idBinding,
+		tParams = tParams
+	}
+	PYATV.UrlCall(uri,PYATV.MediaCallback,nil,nil,cbData)
+end
+
+function PYATV.MediaCallback(jsonData,callbackData,source)
+
+	dbg("Media callback...")
+
+	--Came from Dashboard or Queue request
+	if (callbackData) then
+		dbg("Callback data:",dump(callbackData))
+		local source = callbackData.source
+		local idBinding = callbackData.idBinding
+		local tParams = callbackData.tParams
+		
+		if (source=="dashboard") then
+			PYATV.GenerateDashboard(idBinding,tParams,jsonData)
+		elseif (source=="queue") then
+			PYATV.GenerateQueue(idBinding,tParams,jsonData)
+		end
+	end
+
+	--Send Dashboard or Queue on generic inbound msg
+	if (source=="ws") then
+		PYATV.GenerateDashboard(nil,nil,jsonData)
+		PYATV.GenerateQueue(nil,nil,jsonData)
+	end
+
+	--Send data always just in case
+	PYATV.GenerateMediaInfo(jsonData)
+
+end
+
+--EXECUTE COMMAND
 
 function ExecuteCommand (strCommand, tParams)
 	tParams = tParams or {}
@@ -612,8 +653,7 @@ function EC.Launch_App (tParams)
 	local id = tParams["App"]
 	if (id) then
 		print ("App ID: "..id)
-		url = Properties["Server IP"]..":"..Properties["Server Port"].."/launch_app/"..Properties["Device ID"].."/"..id
-		PYATV.SendCommand (url)
+		PYATV.LaunchApp(id)
 	end
 end
 
@@ -627,8 +667,8 @@ end
 
 function AppSelection (currentValue) 	-- CUSTOM_SELECT from Actions and Programming Action.
 	for k,v in pairs(APP_SELECT) do APP_SELECT[k] = nil end -- clear table!
-	for strAppName, strAppId in orderedPairs(APP_LIST) do
-		table.insert(APP_SELECT, { text = strAppName, value = strAppId })
+	for strAppName, strAppProperties in orderedPairs(APP_LIST) do
+		table.insert(APP_SELECT, { text = strAppName, value = strAppProperties.id })
 	end
 	return APP_SELECT
 end
@@ -637,31 +677,33 @@ function OnDriverDestroyed ()
 	KillAllTimers()
 end
 
-function OnDriverInit ()
-	PYATV.ConnectDevice()
-	PYATV.ConnectWebsocket()
+function OnDriverInit()
 	C4:AddVariable("Play State", "Not Playing", "STRING")
 	C4:AddVariable("Media Type", "Not Playing", "STRING")
 	C4:AddVariable("Service", "Not Playing", "STRING")
-	init = "new"
 end
 
-
-function OnDriverLateInit ()
-    KillAllTimers()
-    if (C4.AllowExecute) then
-        C4:AllowExecute(true)
-    end
+function OnDriverLateInit()
+	init = "new"
+	PYATV.MigrateOldData()
+    
+	KillAllTimers()
     C4:urlSetTimeout(10)
-    --PYATV.preMakeImageList()
-    PYATV.pollMediaInfo()
+
+	--Makes sure custom buttons work
     for property, _ in pairs(Properties) do
         OnPropertyChanged(property)
     end
+
+	--Hide app switcher in all rooms
     if (USES_DEDICATED_SWITCHER) then
         HideProxyInAllRooms(SWITCHER_PROXY)
     end
     RegisterRooms()
+
+	init = "idle"
+
+	PYATV.ConnectDevice()
 end
 
 function OnSystemEvent (event)
@@ -702,6 +744,8 @@ function OnPropertyChanged (strProperty)
 	end
 end
 
+--ON PROPERTY CHANGED
+
 function OPC.Debug_Mode (value)
 	if (DEBUGPRINT) then
 		DEBUGPRINT = false
@@ -711,14 +755,9 @@ function OPC.Debug_Mode (value)
 	end
 end
 
-function OPC.Device_Selector (value)
-	--if (Properties["AirPlay Credentials"] == "") or (Properties["Companion Credentials"] == "") then
-		dbg ("Pairing..")
-		PYATV.BeginPairing(value)
-	--else
-	--	dbg ("Connecting..")
-	--	PYATV.ConnectDevice()
-	--end
+function OPC.Device_Selector(value)
+	dbg ("Begin pairing for "..value)
+	PYATV.BeginPairing(value)
 end
 
 function OPC.Protocol_to_Pair (value)
@@ -733,14 +772,6 @@ end
 
 function OPC.Pairing_Code (value)
 	PYATV.PairWithPIN(value)
-end
-
-function OPC.Poll_Device (value)
-     if (value == 'Only when on') then
-	  PYATV.RefreshInterval("stop")
-     elseif (value == "Always") then
-       PYATV.RefreshInterval("start")
-     end
 end
 
 function OPC.On_Power_Off (value)
@@ -885,6 +916,8 @@ function OPC.RECORD_Button (value)
 	end
 end
 
+--RECEIVED FROM PROXY
+
 function ReceivedFromProxy (idBinding, strCommand, tParams)
 	strCommand = strCommand or ''
 	tParams = tParams or {}
@@ -909,40 +942,6 @@ function ReceivedFromProxy (idBinding, strCommand, tParams)
 		strCommand = tParams.PASSTHROUGH_COMMAND
 	end
 	if (idBinding == MSP_PROXY) then
-		if (strCommand == 'DEVICE_SELECTED') then
-			PYATV.pollMediaInfo ("proxy")
-			--Using websockets. not needed
-			--PYATV.RefreshInterval ("start")
-			PYATV.ConnectDevice()
-			PYATV.ConnectedWebsocket()
-			MSP.ON (idBinding, strCommand, tParams, args)
-		elseif (strCommand == 'DEVICE_DESELECTED') then
-			-- Device is no longer needed in the room
-			--Sending off cmd here does not guarantee device is not still active in other rooms
-			--PYATV.RefreshInterval ("stop")
-		elseif (strCommand == 'GetDashboard') then
-			-- A navigator has requested an update of the dashboard
-			PYATV.pollMediaInfo ("proxy")
-			return ('')
-		elseif (strCommand == 'GetQueue') then
-			-- A navigator has requested an update of the queue
-			--UpdateQueue()
-			PYATV.pollMediaInfo ("proxy")
-			return ('')
-		elseif (strCommand == 'ToggleRepeat') then
-			-- Repeat button pressed on the Now Playing screen (ToggleRepeat defined as Command for the "Repeat" Action in XML)
-			REPEAT = not (REPEAT)
-			--UpdateQueue()
-		elseif (strCommand == 'ToggleShuffle') then
-			-- Shuffle button pressed on the now playing screen (ToggleShuffle defined as Command for the "Shuffle" Action in XML)
-			SHUFFLE = not (SHUFFLE)
-			--UpdateQueue()
-		elseif (strCommand == 'OFF') then
-		     --Stop timer only when all respective rooms are off
-			--Using websockets. not needed
-			--PYATV.RefreshInterval ("stop")
-			C4:SetVariable("Service", "OFF")
-		end
 		if (MSP[strCommand] ~= nil) and (type(MSP[strCommand])=='function') then
 			MSP[strCommand] (idBinding, strCommand, tParams, args)
 		end
@@ -962,8 +961,8 @@ function ReceivedFromProxy (idBinding, strCommand, tParams)
 				local appName = GetRelevantUniversalAppId (appDeviceId, 'APP_NAME')
 				local tValues = ""
 				if (APP_LIST[appName]) then
-					dbg ("PyATV Dynamic App ID found: "..APP_LIST[appName])
-					tValues = { ['App'] = APP_LIST[appName] }
+					dbg ("PyATV Dynamic App ID found: "..APP_LIST[appName].id)
+					tValues = { ['App'] = APP_LIST[appName].id }
 				elseif (APPLE_TV[appName]) then
 					dbg ("Apple TV Pre-defined App ID found: "..APPLE_TV[appName])
 					tValues = { ['App'] = APPLE_TV[appName] }
@@ -1033,11 +1032,15 @@ function RegisterRooms ()
 	end
 end
 
+--MSP REMOTE
+
 function MSP.ON (idBinding, strCommand, tParams, args)
 	local pytvCommand = CMDS [strCommand]
 	if (pytvCommand ~= nil) then
 		PYATV.RemoteCommand (pytvCommand)
 	end
+	--probably revisit
+	PYATV.ConnectDevice()
 end
 
 function MSP.OFF (idBinding, strCommand, tParams, args)
@@ -1045,13 +1048,16 @@ function MSP.OFF (idBinding, strCommand, tParams, args)
 	if (pytvCommand ~= nil) then
 		PYATV.RemoteCommand (pytvCommand)
 	end
+	--revisit?
+	C4:SetVariable("Service", "OFF")
 end
 
 function MSP.MENU (idBinding, strCommand, tParams, args)
 	local pytvCommand = CMDS [strCommand]
-	if (pytvCommand ~= nil) then
-		PYATV.RemoteCommand (pytvCommand)
-	end
+	--if (pytvCommand ~= nil) then
+	--	PYATV.RemoteCommand (pytvCommand)
+	--end
+	--Moved to END_MENU in favor of home hold
 end
 
 function MSP.GUIDE (idBinding, strCommand, tParams, args)
@@ -1133,6 +1139,30 @@ end
 
 function MSP.END_ENTER (idBinding, strCommand, tParams, args)
 	local pytvCommand = CMDS [strCommand]
+	if (pytvCommand ~= nil) then
+		  
+	     if (tonumber(tParams["DURATION"]) > tonumber(Properties["Button Hold Threshold"])) then
+		  PYATV.RemoteCommandHold (pytvCommand, "sendCmd")
+		else
+		  PYATV.RemoteCommand (pytvCommand)
+	     end
+	end
+end
+
+function MSP.END_MENU (idBinding, strCommand, tParams, args)
+	local pytvCommand = CMDS.MENU --[strCommand]
+	if (pytvCommand ~= nil) then
+		  
+	     if (tonumber(tParams["DURATION"]) > tonumber(Properties["Button Hold Threshold"])) then
+		  PYATV.RemoteCommandHold (pytvCommand, "sendCmd")
+		else
+		  PYATV.RemoteCommand (pytvCommand)
+	     end
+	end
+end
+
+function MSP.END_CANCEL (idBinding, strCommand, tParams, args)
+	local pytvCommand = CMDS.CANCEL --[strCommand]
 	if (pytvCommand ~= nil) then
 		  
 	     if (tonumber(tParams["DURATION"]) > tonumber(Properties["Button Hold Threshold"])) then
@@ -1290,6 +1320,194 @@ function MSP.RECORD (idBinding, strCommand, tParams, args)
 	end
 end
 
+--NAVIGATOR UI
+
+function MSP.GetDashboard(idBinding, strCommand, tParams, args)
+	PYATV.GetMedia("dashboard",idBinding,tParams)
+end
+
+function MSP.GetQueue(idBinding, strCommand, tParams, args)
+	PYATV.GetMedia("queue",idBinding,tParams)
+end
+
+function MSP.TabsCommand(idBinding, strCommand, tParams, args)
+
+	local tabs = "<Tabs></Tabs>"
+
+    local allTabs = [[
+    <Tabs>
+		<Tab>
+			<Id>Users</Id>
+			<Name>Users</Name>
+			<IconId>tab_explore</IconId>
+			<ScreenId>UsersScreen</ScreenId>
+		</Tab>
+	   <Tab>
+		<Id>Apps</Id>
+		<Name>Apps</Name>
+		<IconId>tab_explore</IconId>
+		<ScreenId>AppsScreen</ScreenId>
+	   </Tab>
+	   <Tab>
+		  <Id>Settings</Id>
+		  <Name>Settings</Name>
+		  <IconId>tab_explore</IconId>
+		  <ScreenId>SettingsScreen</ScreenId>
+	   </Tab>
+    </Tabs>
+    ]]
+
+	local settingsOnly = [[
+	<Tabs>
+		<Tab>
+			<Id>Settings</Id>
+			<Name>Settings</Name>
+			<IconId>tab_explore</IconId>
+			<ScreenId>SettingsScreen</ScreenId>
+		</Tab>
+	</Tabs>
+	]]
+
+	local option = Properties["Device Selection Behavior"]
+
+	if (option ~= "Now Playing Screen") then
+		tabs = allTabs
+	end
+    
+    local data = tabs
+    DataReceived(idBinding, tParams["NAVID"], tParams["SEQ"], data)
+
+end
+
+function MSP.UIScanDevices(idBinding, strCommand, tParams, args)
+    
+    PYATV.ScanDevices(idBinding,tParams,MSP.UIScanDevicesCallback)
+
+end
+
+function MSP.UIScanDevicesCallback(idBinding,tParams,devices)
+
+    local devicesXml = "<List>"
+    
+    for k,v in pairs(devices) do
+	   local name = v["name"] or "No name"
+	   local id = v["identifier"] or "No ID"
+	   devicesXml = devicesXml.."<item><title>"..name.."</title><subtitle>"..id.."</subtitle><id>"..id.."</id></item>"
+    end
+    
+    devicesXml = devicesXml.."</List>"
+
+    dbg("Got data from callback: "..devicesXml)
+    
+    MSP.UIScanDevicesXML = devicesXml
+    
+end
+
+function MSP.UIShowDevices(idBinding, strCommand, tParams, args)
+    local screen = "<NextScreen>UIDevicesScreen</NextScreen>"
+    DataReceived(idBinding, tParams["NAVID"], tParams["SEQ"], screen)
+end
+
+function MSP.UIDevicesScreen(idBinding, strCommand, tParams, args)
+
+    local data = MSP.UIScanDevicesXML
+    
+    if (not data) then
+	   data = [[
+		  <List>
+			 <item>
+				<title>No devices found</title>
+				<subtitle>Scan may not be complete. Click to refresh.</subtitle>
+				<action>UIShowDevices</action>
+			 </item>
+		  </List>
+	   ]]
+    end
+    
+    DataReceived(idBinding, tParams["NAVID"], tParams["SEQ"], data)
+
+end
+
+function MSP.UIReconnect(idBinding, strCommand, tParams, args)
+    PYATV.ConnectDevice()
+end
+
+function MSP.Apps(idBinding, strCommand, tParams, args)
+
+    local apps = "<List>"
+
+    for appName,appProperties in orderedPairs(APP_LIST) do
+		local id = appProperties.id
+	   	local icon = appProperties.icon or ""
+	   	local app = "<item><link>true</link><id>"..id.."</id><title>"..XMLEncode(appName).."</title><image_list>"..icon.."</image_list><default_action>AppLaunchUI</default_action></item>"
+	   	apps = apps..app
+	   
+    end
+    
+    apps = apps.."</List>"
+    
+    local data = apps
+    DataReceived(idBinding, tParams["NAVID"], tParams["SEQ"], data)
+
+
+end
+
+function MSP.AppLaunchUI(idBinding, strCommand, tParams, args)
+	local id = args.id
+	PYATV.LaunchApp(id)
+
+	--Hotfix for iOS app, force Watch on selection
+	C4:SendToDevice(tParams.ROOMID, 'SELECT_VIDEO_DEVICE', {deviceid = C4:GetProxyDevices()})
+
+	local screen = "<NextScreen>#nowplaying</NextScreen>"
+    DataReceived(idBinding, tParams["NAVID"], tParams["SEQ"], screen)
+end
+
+function MSP.Users(idBinding, strCommand, tParams, args)
+
+    local users = "<List>"
+
+    for i,userData in orderedPairs(USER_LIST) do
+		local id = userData.id
+		local name = userData.name
+	   	local user = "<item><link>true</link><id>"..id.."</id><title>"..XMLEncode(name).."</title><default_action>UserSwitchUI</default_action></item>"
+	   	users = users..user
+	   
+    end
+    
+    users = users.."</List>"
+    
+    local data = users
+    DataReceived(idBinding, tParams["NAVID"], tParams["SEQ"], data)
+
+
+end
+
+function MSP.UserSwitchUI(idBinding, strCommand, tParams, args)
+	local id = args.id
+	PYATV.SwitchUser(id)
+
+	--Hotfix for iOS app, force Watch on selection
+	C4:SendToDevice(tParams.ROOMID, 'SELECT_VIDEO_DEVICE', {deviceid = C4:GetProxyDevices()})
+
+	local screen = "<NextScreen>#nowplaying</NextScreen>"
+    DataReceived(idBinding, tParams["NAVID"], tParams["SEQ"], screen)
+end
+
+function MSP.GetSettings(idBinding, strCommand, tParams, args)
+
+    local settings = "<Settings><UIServerIP>"..Properties["Server Address"].."</UIServerIP>"
+    
+    settings = settings.."<UISelectedDevice>"..Properties["Device Selector"].."</UISelectedDevice></Settings>"
+
+
+    local data = settings
+    DataReceived(idBinding, tParams["NAVID"], tParams["SEQ"], data)
+    
+end
+
+--Other misc from old driver
+
 function DataReceivedError (idBinding, navId, seq, msg)
 	local tParams = {
 		NAVID = navId,
@@ -1351,318 +1569,6 @@ function SendEvent (idBinding, navId, roomId, name, args)
     dbg ("--tParams: "..dump(tParams))
     dbg ("------DONE---------")
     C4:SendToProxy(idBinding, "SEND_EVENT", tParams, "COMMAND")
-end
-
--- Update Navigator
-function MakeImageList (iconInfo)
-	--dbg ("MakeImageList Starting..")
-	if (iconInfo == nil) then
-		print("MakeImageList data nil, ending..")
-		return
-	end
-    --local defaultItem = data["url"]
-    defaultSizes = {512}
-    image_list = {}
-    w = iconInfo["width"]
-    h = iconInfo["height"]
-    if (h and w) then
-	   h = tonumber(iconInfo["height"])
-	   w = tonumber(iconInfo["width"])
-	   
-	   --print("INIT make image list... URL: "..iconInfo["url"].." width: "..w.." height: "..h)
-	    if (iconInfo["url"]) and w and h then
-		    --print("START Make image list...URL: "..iconInfo["url"])
-		    --for _, size in ipairs(defaultSizes) do
-			    imageUrl = iconInfo["url"]
-			    width = w
-			    height = h
-			    table.insert (image_list, '<image_list width="'..width..'" height="'..height..'">'..imageUrl..'</image_list>')
-		    --end
-	    else
-		  --print("FAIL Make image list...")
-	    end
-		--print("FINISH Make image list...")
-	   return image_list
-    else
-	   return
-    end
-    
-end
-
-function UpdateDashboard (data, isForced)
-    -- These are all 5 of the Id values of the Transport items from the Dashboard section of the XML
-    
-    local dashboardInfo = {}
-    local possibleItems = {
-        "Play",
-        "Pause",
-        "Stop",
-        "SkipFwd",
-        "SkipRev"
-    }
-    position = data["position"] or 0
-    if (position == "none") then
-	   position = 0
-    end
-    total_time = data["total_time"] or "none"
-    live = false
-    if (total_time) then
-        if total_time ~= "none" then
-            dbg ("Song is not live... Progress: "..position)
-            live = false
-            dbg (position.." --|-- "..total_time)
-            label = ConvertTime(position - 0).." / -"..ConvertTime(total_time - position)
-        else
-            dbg ("Song is live... Progress: "..position)
-            live = true
-            label = "LIVE"
-        end
-    end
-    if (live == true) and (data["device_state"] == "playing") then
-        dashboardInfo = {
-            Items = "Stop" -- items to display, in order, on Dashboard of Now Playing bar.  Single-space separated list of Id values
-        }
-    elseif (live == true) and (data["device_state"] == "paused") then
-        dashboardInfo = {
-            Items = "Play" -- items to display, in order, on Dashboard of Now Playing bar.  Single-space separated list of Id values
-        }
-    elseif (data["device_state"] == "playing") then
-        dashboardInfo = {
-            Items = "SkipRev Pause SkipFwd" -- items to display, in order, on Dashboard of Now Playing bar.  Single-space separated list of Id values
-        }
-    else
-        dashboardInfo = {
-            Items = "SkipRev Play SkipFwd" -- items to display, in order, on Dashboard of Now Playing bar.  Single-space separated list of Id values
-        }
-    end
-    playstate = data["device_state"]
-    --DataReceived(5001, navId, seq, dashboardInfo)
-    
-    if (dump(dashboardInfo) ~= dump(oldDashboardInfo)) then
-	   SendEvent(5001, nil, nil, "DashboardChanged", dashboardInfo)
-	   dbg("DBs not equal, updating")
-	   --print("New DB: "..dump(dashboardInfo))
-	   --print("Old DB: "..dump(oldDashboardInfo))
-    else
-	   dbg("DBs equal, not updating")
-	   --print("New DB: "..dump(dashboardInfo))
-	   --print("Old DB: "..dump(oldDashboardInfo))
-    end
-    
-    if (isForced) then
-	   SendEvent(5001, nil, nil, "DashboardChanged", dashboardInfo)
-    end
-    
-    oldDashboardInfo = dashboardInfo
-end
-
-function UpdateMediaInfo (data, navId, roomId, seq)
-    -- Updates the Now Playing area of the media bar and also the main section on the left of the Now Playing screen.  Doesn't affect the Queue side at all.
-    
-    local args = {
-        TITLE = data["title"] or '',
-        ALBUM = data["album"] or '',
-        ARTIST = data["artist"] or '',
-        GENRE = data["genre"] or '',
-        IMAGEURL = data["image"] --or C4:Base64Encode('controller://driver/atv-remote/icons/default_cover_art.png')
-    }
-    
-    if (data["app_id"] == "com.apple.TVAirPlay" and args["TITLE"] == "") then
-	   args["TITLE"] = "AirPlay"
-    end
-    
-    for k,v in pairs(args) do
-	   if (v == "none") then
-		  args[k] = nil
-	   end
-    end
-    
-    --if (data["image"] ~= nil) then
-		--local decoded_img = C4:Base64Decode(data["image"])
-		--print("Image: "..decoded_img)
-	--end
-    --DataReceived(5001, navId, seq, args)
-    C4:SendToProxy(5001, "UPDATE_MEDIA_INFO", args, "COMMAND", true)
-    --UpdateQueue(data,image)
-end
-
-function UpdateProgress (data, navId, roomId, seq)
-    label = "Not playing"
-    position = data["position"] or 0
-    if (position == "none") then
-	   position = 0
-    end
-    total_time = data["total_time"] or "none"
-    live = false
-    if (total_time) then
-        if total_time ~= "none" then
-            dbg ("Song is not live... Progress: "..position)
-            live = false
-            dbg (position.." --|-- "..total_time)
-            label = ConvertTime(position - 0).." / -"..ConvertTime(total_time - position)
-        else
-            dbg ("Song is live... Progress: "..position)
-            live = true
-            label = "LIVE"
-		  total_time = nil
-		  position = nil
-        end
-    end
-    --local duration = math.random (100, 500)
-    --local elapsed = math.random (1, duration)
-    --local label = ConvertTime (prog)..' / -'..ConvertTime (duration - elapsed)
-    label0 = label
-    local progressInfo = {
-        length = total_time, -- integer for setting size of duration bar
-        offset = position, -- integer for setting size of elapsed indicator inside duration bar
-        label = label0 -- text string to be displayed next to duration bar
-    }
-    --DataReceived(5001, navId, seq, progressInfo)
-    SendEvent(5001, nil, nil, "ProgressChanged", progressInfo)
-end
-
-function UpdateQueue (data, navId, roomId, seq)
-	dbg ("UpdateQueue starting")
-	if (data == nil) then
-		print("UpdateQueue no data, exiting!")
-		return
-	end
-    --prog = data["position"]
-    local queue = {}
-    duration = 0
-    position = data["position"] or 0
-    if (position == "none") then
-	   position = 0
-    end
-    total_time = data["total_time"] or 0
-    live = false
-    if (total_time) then
-        if total_time ~= "none" then
-            dbg ("Song is not live... Progress: "..position)
-            live = false
-            dbg (position.." --|-- "..total_time)
-            label = ConvertTime(position - 0).." / -"..ConvertTime(total_time - position)
-		  duration = ConvertTime(total_time - 0)
-        else
-            dbg ("Song is live... Progress: "..position)
-            live = true
-            label = "LIVE"
-		  duration = nil
-        end
-    end
-    for k,v in pairs(data) do
-	   if (v == "none") then
-		  data[k] = nil
-	   end
-    end
-    
-    if (data["app_id"] == "com.apple.TVAirPlay") then
-	   data["app_icon"] = "controller://driver/atv-remote/icons/airplay.png"
-    end
-    
-	if next(data) then
-	   i = 0
-	    if (data["title"] or data["artist"]) then
-		     i = i+1
-		     queue[i] = {title = 'Now Playing', isHeader = true}
-			i = i+1
-			queue[i] = {title = data["title"], subtitle = data["artist"], duration = duration, ImageUrl = data["imageURL"]}
-	    end
-	    
-	    if data["app"] then
-		     i = i+1
-			queue[i] = {title = 'Service', isHeader = true}
-			i = i+1
-			
-			if (data["app_id"] == "com.apple.TVAirPlay" and data["app"] ~= "AirPlay") then
-			    queue[i] = {title = data["app"], subtitle = "AirPlay", ImageUrl = data["app_icon"]}
-		     else
-			    queue[i] = {title = data["app"], ImageUrl = data["app_icon"]}
-		     end
-	    else
-		  dbg("No app found. Data: "..dump(data))
-	    end
-     else
-	   dbg ("data is nil, queue: "..dump(queue))
-	end
-	--print("APP ICON URL: "..data["app_icon"])
-	--print("SONG ICON URL: "..data["ImageUrl"])
-    local tags = {
-        can_shuffle = true,
-        can_repeat = true,
-        shufflemode = (SHUFFLE == true),
-        repeatmode = (REPEAT == true)
-    }
-    local list = {}
-    if next(queue) then
-	     --dbg("Queue not empty, = "..dump(queue))
-	     icon = {}
-	     icon["url"] = data["app_icon"]
-		icon["width"] = 512
-		icon["height"] = 512
-	
-		for _, item in ipairs(queue) do
-			 
-			 --if (item["title"] == nil) then
-			 --	item["title"] = ""
-			 --end
-		
-			 if (item["title"] == 'Now Playing') then
-				table.insert(list, XMLTag("item", item))
-			 end
-			 if (item["title"] == data["title"]) then
-				--print("make image list for Now Playing")
-				item.image_list = MakeImageList(artwork_info)
-				table.insert(list, XMLTag("item", item))
-			 --else
-				--dbg("Queue titles not equal... "..item["title"].." ~= "..data["title"])
-			 end
-			 if (item["title"] == 'Service') then
-				table.insert(list, XMLTag("item", item))
-			 end
-			 if (item["title"] == data["app"]) then
-				--print("make image list for App")
-				item.image_list = MakeImageList(icon)
-				table.insert(list, XMLTag("item", item))
-			 end
-		end
-		
-
-		list = table.concat(list)
-		
-		queueInfo = {
-			List = list, -- The entire list that will be displayed for the queue
-			NowPlayingIndex = 1, -- The item (0-indexed) that will be marked as current in the queue (blue marker on the Android navigators)
-			NowPlaying = XMLTag(tags) -- The tags that will be applied to all ActionIds from the NowPlaying section of the XML to determine what actions are shown
-		}
-
-    else
-		dbg ("queue is nil")
-		
-		queue = {
-			{title = "Not Playing"}
-		}
-		
-		for _, item in ipairs(queue) do
-		  table.insert(list, XMLTag("item", item))
-	     end
-		
-		list = table.concat(list)
-		
-		queueInfo = {
-			List = list, -- The entire list that will be displayed for the queue
-			NowPlayingIndex = 1, -- The item (0-indexed) that will be marked as current in the queue (blue marker on the Android navigators)
-			NowPlaying = XMLTag(tags) -- The tags that will be applied to all ActionIds from the NowPlaying section of the XML to determine what actions are shown
-		}
-		
-    end
-    --DataReceived(5001, navId, seq, queueInfo)
-	if (queueInfo) then
-		SendEvent(5001, nil, nil, "QueueChanged", queueInfo)
-		dbg ("Queue Done")
-     else
-	   dbg ("queueInfo is nil")
-	end
 end
 
 -- Useful functions
