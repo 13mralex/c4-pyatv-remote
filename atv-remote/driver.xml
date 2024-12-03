@@ -6,7 +6,7 @@
   <model>TV</model>
   <created>09/15/2021 12:00 AM</created>
   <modified>12/02/2024 8:00 PM</modified>
-  <version>52</version>
+  <version>53</version>
   <control>lua_gen</control>
   <driver>DriverWorks</driver>
   <small image_source="c4z">icons/device_sm.png</small>
