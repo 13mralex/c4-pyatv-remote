@@ -203,6 +203,7 @@ class ATV:
         self.atv_list = {}
         self.app_icon_store = {}
         self.ws_clients = []
+        self.connected = False
         self.failed = {"status":"ATV not connected","connected":False}
 
     async def on_websocket_ws(self,req,ws,id):
@@ -231,7 +232,6 @@ class ATV:
                 self.ws_clients.remove(_ws)
                 return
         
-
     async def on_get_remote(self,req,resp):
         resp.media = {"status":"OK"}
 
@@ -342,6 +342,11 @@ class ATV:
             resp.media = data
         else:
             resp.media = self.failed
+
+    async def on_get_disconnect(self,req,resp,id):
+        atv = self.get_atv(id)
+        atv.close()
+        resp.media = self.failed
 
     async def add_atv(self,atv:pyatv.interface.AppleTV,id):
         logging.info(f"Adding ATV...")
@@ -496,6 +501,7 @@ pyatv_app = PYATV(pyatv_atv)
 app.add_route("/scan",pyatv_app,suffix="scan")
 app.add_route("/pair",pyatv_app,suffix="pair")
 app.add_route("/connect",pyatv_app,suffix="connect")
+app.add_route("/disconnect/{id}",pyatv_atv,suffix="disconnect")
 app.add_route("/remote",pyatv_atv,suffix="remote")
 app.add_route("/artwork/{id}/art.png",pyatv_atv,suffix="artwork")
 app.add_route("/users/{id}",pyatv_atv,suffix="users")

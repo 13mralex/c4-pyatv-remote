@@ -94,17 +94,12 @@ function PYATV.ConnectWebsocket()
 
 	local offline = function(self)
 		dbg('ws connection offline')
-		WS:delete()
-		dbg("Attempt reconnect in 5 seconds...")
-		C4:SetTimer(5000, function(timer)
-			PYATV.ConnectWebsocket()
-			timer:Cancel()
-		end, true)
+		PYATV.ReconnetWebsocket()
 	end
 
 	local closed = function(self)
 		dbg('ws connection closed by remote host')
-		WS:delete()
+		PYATV.ReconnetWebsocket()
 	end
 
 	WS:SetProcessMessageFunction(pm)
@@ -114,6 +109,26 @@ function PYATV.ConnectWebsocket()
 
 	WS:Start()
 
+	--Run reconnect in case no connection on init
+	PYATV.ReconnetWebsocket()
+
+end
+
+function PYATV.ReconnetWebsocket()
+	dbg("Attempt WS reconnect in 5 seconds...")
+
+	if (Timer.WS) then
+		Timer.WS:Cancel()
+	end
+
+	Timer.WS = C4:SetTimer(5000, function(timer)
+		if (WS.connected) then
+			timer:Cancel()
+		else
+			dbg("WS reports not connected, trying again in 5 seconds...")
+			PYATV.ConnectWebsocket()
+		end
+	end, true)
 end
 
 function PYATV.WSDataReceived(data)
@@ -121,11 +136,7 @@ function PYATV.WSDataReceived(data)
 
     jsonData = JSON:decode(data)
 	if (jsonData.connected == false) then
-		dbg("WS reports ATV is offline, attempting reconnect in 10 seconds...")
-		C4:SetTimer(10000, function(timer)
-			PYATV.ConnectDevice()
-			timer:Cancel()
-		end, true)
+		PYATV.ReconnectDevice()
 	else
     	PYATV.MediaCallback(jsonData,nil,"ws")
 	end
@@ -168,7 +179,7 @@ function PYATV.UrlCall(uri, callback, method, data, callbackData)
 							PYATV.UpdateStatus(jsonData["status"])
 						elseif (jsonData["connected"]~=nil) then
 							if (not jsonData["connected"]) then
-								PYATV.ConnectDevice()
+								PYATV.ReconnectDevice()
 							end
 						end
 						if (callback) then
@@ -205,7 +216,7 @@ function PYATV.UrlCall(uri, callback, method, data, callbackData)
 							PYATV.UpdateStatus(jsonData["status"])
 						elseif (jsonData["connected"]~=nil) then
 							if (not jsonData["connected"]) then
-								PYATV.ConnectDevice()
+								PYATV.ReconnectDevice()
 							end
 						end
 						if (callback) then
@@ -382,8 +393,6 @@ end
 function PYATV.ConnectDevice()
 	print ("---Connect Device---")
 
-	PYATV.ConnectWebsocket()
-
 	local data = {
 		id = PersistData["DeviceID"],
 		creds = PersistData["creds"]
@@ -392,6 +401,19 @@ function PYATV.ConnectDevice()
 	PYATV.UrlCall("/connect",nil,"post",data)
 	PYATV.GetAppList()
 	PYATV.GetUserList()
+end
+
+function PYATV.ReconnectDevice()
+	dbg("Attempting to reconnect device in 10 seconds...")
+	Timer.Device = C4:SetTimer(10000, function(timer)
+		PYATV.ConnectDevice()
+		timer:Cancel()
+	end, true)
+end
+
+function PYATV.Connect()
+	PYATV.ConnectDevice()
+	PYATV.ConnectWebsocket()
 end
 
 --APPS
@@ -675,8 +697,8 @@ function EC.ScanDevices (tParams)
 	PYATV.ScanDevices()
 end
 
-function EC.TestConnection (tParams)
-	PYATV.ConnectDevice()
+function EC.RefreshConnection (tParams)
+	PYATV.Connect()
 end
 
 function AppSelection (currentValue) 	-- CUSTOM_SELECT from Actions and Programming Action.
@@ -778,13 +800,7 @@ function OPC.Device_Selector(value)
 end
 
 function OPC.Protocol_to_Pair (value)
-	local credentials = value.." Credentials"
-	dbg (credentials)
-	--if (Properties[credentials] == "") then
-		PYATV.PairProtocol(value)
-	--else
-	--	PYATV.ConnectDevice()
-	--end
+	PYATV.PairProtocol(value)
 end
 
 function OPC.Pairing_Code (value)
@@ -1057,7 +1073,7 @@ function MSP.ON (idBinding, strCommand, tParams, args)
 		PYATV.RemoteCommand (pytvCommand)
 	end
 	--probably revisit
-	PYATV.ConnectDevice()
+	PYATV.Connect()
 end
 
 function MSP.OFF (idBinding, strCommand, tParams, args)
@@ -1446,7 +1462,7 @@ function MSP.UIDevicesScreen(idBinding, strCommand, tParams, args)
 end
 
 function MSP.UIReconnect(idBinding, strCommand, tParams, args)
-    PYATV.ConnectDevice()
+    PYATV.Connect()
 end
 
 function MSP.Apps(idBinding, strCommand, tParams, args)

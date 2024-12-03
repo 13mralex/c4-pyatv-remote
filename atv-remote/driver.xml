@@ -252,8 +252,8 @@
         </params>
       </action>
       <action>
-        <name>Test Connection</name>
-        <command>TestConnection</command>
+        <name>Refresh Connection</name>
+        <command>RefreshConnection</command>
       </action>
       <action>
         <name>Scan Devices</name>
