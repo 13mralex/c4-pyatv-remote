@@ -693,6 +693,11 @@ function EC.Launch_App (tParams)
 	end
 end
 
+function EC.Refresh_Connection (tParams)
+	print ("---Refresh Connection---")
+	PYATV.ConnectDevice()
+end
+
 function EC.ScanDevices (tParams)
 	PYATV.ScanDevices()
 end
