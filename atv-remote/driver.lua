@@ -673,7 +673,7 @@ end
 
 function EC.Refresh_Connection (tParams)
 	print ("---Refresh Connection---")
-	PYATV.ConnectDevice()
+	PYATV.Connect()
 end
 
 function EC.ScanDevices (tParams)
