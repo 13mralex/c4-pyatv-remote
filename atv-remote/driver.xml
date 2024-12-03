@@ -6,7 +6,7 @@
   <model>TV</model>
   <created>09/15/2021 12:00 AM</created>
   <modified>12/02/2024 8:00 PM</modified>
-  <version>51</version>
+  <version>52</version>
   <control>lua_gen</control>
   <driver>DriverWorks</driver>
   <small image_source="c4z">icons/device_sm.png</small>
@@ -239,6 +239,10 @@
           </param>
         </params>
       </command>
+      <command>
+        <name>Refresh Connection</name>
+        <description>Refresh connection with ATV</description>
+      </command>
     </commands>
     <actions>
       <action>
@@ -260,7 +264,6 @@
         <command>ScanDevices</command>
       </action>
     </actions>
-    <documentation file="www/documentation.rtf" />
   </config>
   <capabilities>
     <hide_in_media>True</hide_in_media>
