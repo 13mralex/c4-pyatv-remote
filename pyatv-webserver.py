@@ -259,6 +259,29 @@ class ATV:
                 resp.media = self.failed
         except Exception as e:
             resp.media = {"status":f"Failed: {str(e)}"}
+
+    async def on_post_keyboard(self,req,resp):
+        data = await req.media
+        id = data["id"]
+        string = data.get("string")
+        action = data["action"]
+
+        try:
+            
+            atv = self.get_atv(id)
+
+            if atv:
+                if action=="append":
+                    await atv.keyboard.text_append(string)
+                elif action=="srt":
+                    await atv.keyboard.text_set(string)
+                elif action=="clear":
+                    await atv.keyboard.text_clear()
+                resp.media = {"status":"OK"}
+            else:
+                resp.media = self.failed
+        except Exception as e:
+            resp.media = {"status":f"Failed: {str(e)}"}
         
     async def on_get_artwork(self,req,resp,id):
         atv = self.get_atv(id)
@@ -503,6 +526,7 @@ app.add_route("/pair",pyatv_app,suffix="pair")
 app.add_route("/connect",pyatv_app,suffix="connect")
 app.add_route("/disconnect/{id}",pyatv_atv,suffix="disconnect")
 app.add_route("/remote",pyatv_atv,suffix="remote")
+app.add_route("/keyboard",pyatv_atv,suffix="keyboard")
 app.add_route("/artwork/{id}/art.png",pyatv_atv,suffix="artwork")
 app.add_route("/users/{id}",pyatv_atv,suffix="users")
 app.add_route("/apps/{id}",pyatv_atv,suffix="apps")

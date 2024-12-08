@@ -21,33 +21,74 @@ do	--Globals
 	MINIAPP_BINDING_END = 3125		-- set this to the last binding ID in the XML for the RF_MINI_APP connections
 	MINIAPP_TYPE = 'APPLE_TV'		-- set this to your unique name as defined in the minidriver SERVICE_IDS table
 
-	CMDS = {
+	REMOTE_MAPPINGS = {
+		values = {
+			['Do Nothing']	= nil,
+			['Home']		= 'top_menu',
+			['Menu']		= 'menu',
+			['Dashboard']	= 'home_hold',
+			['Screensaver']	= 'screensaver',
+			['Play/Pause']	= 'play_pause',
+		}
+	}
+
+	REMOTE_CMDS = {
+		PVR				= 'screensaver',
+		STAR			= nil,
+		POUND			= nil,
+		RECORD			= 'play_pause',
 		UP 				= 'up',
 		DOWN 			= 'down',
 		LEFT 			= 'left',
 		RIGHT 			= 'right',
-		ENTER 			= 'select',
-		END_ENTER			= 'select',
-		START_UP 			= 'start_up',
+		PULSE_CH_UP		= 'channel_up',
+		PULSE_CH_DOWN	= 'channel_down',
+		PLAY 			= 'play',
+		PAUSE 			= 'pause',
+		PLAYPAUSE		= 'play',
+		STOP 			= 'stop',
+		SCAN_FWD 		= 'skip_forward',
+		SCAN_REV 		= 'skip_backward',
+		SKIP_FWD 		= 'next',
+		SKIP_REV 		= 'previous',
+	}
+
+	REMOTE_HOLD_CMDS = {
+		MENU			= '',
+		GUIDE			= '',
+		INFO			= '',
+		CANCEL			= '',
+		ENTER 			= 'begin_select',
+		START_UP 		= 'start_up',
 		START_DOWN 		= 'start_down',
 		START_LEFT 		= 'start_left',
-		START_RIGHT 		= 'start_right',
-		STOP_UP 			= 'stop_up',
+		START_RIGHT 	= 'start_right',
+		START_SCAN_FWD 	= 'start_skip_forward',
+		START_SCAN_REV 	= 'start_skip_backward',
+		END_MENU		= '',
+		END_GUIDE		= '',
+		END_INFO		= '',
+		END_CANCEL		= '',
+		END_ENTER		= 'end_select',
+		STOP_UP 		= 'stop_up',
 		STOP_DOWN 		= 'stop_down',
 		STOP_LEFT 		= 'stop_left',
 		STOP_RIGHT 		= 'stop_right',
-		PLAY 			= 'play',
-		PAUSE 			= 'pause',
-		PLAYPAUSE			= 'play',
-		STOP 			= 'stop',
-		SCAN_FWD 			= 'next',
-		SCAN_REV 			= 'previous',
-		SKIP_FWD 			= 'next',
-		SKIP_REV 			= 'previous',
-		START_SCAN_FWD 	= 'start_next',
-		START_SCAN_REV 	= 'start_previous',
-		STOP_SCAN_FWD 		= 'stop_next',
-		STOP_SCAN_REV 		= 'stop_previous'
+		STOP_SCAN_FWD 	= 'stop_skip_forward',
+		STOP_SCAN_REV 	= 'stop_skip_backward',
+	}
+
+	KEYBOARD_CMDS = {
+		NUMBER_0		= '0',
+		NUMBER_1		= '1',
+		NUMBER_2		= '2',
+		NUMBER_3		= '3',
+		NUMBER_4		= '4',
+		NUMBER_5		= '5',
+		NUMBER_6		= '6',
+		NUMBER_7		= '7',
+		NUMBER_8		= '8',
+		NUMBER_9		= '9',
 	}
 
 	APP_LIST = {} --- For dynamic app list pulled from PyATV :)
@@ -146,6 +187,24 @@ end
 
 function dbg(strDebugText, ...)
 	if (DEBUGPRINT) then print (os.date ('%x %X : ')..(strDebugText or ''), ...) end
+end
+
+function LoadProperties()
+	local properties = {
+		"Debug Mode",
+		"MENU Button",
+		"GUIDE Button",
+		"INFO Button",
+		"CANCEL Button",
+		"PVR Button",
+		"STAR Button",
+		"POUND Button",
+		"RECORD Button",
+	}
+
+	for i,property in pairs(properties) do
+        OnPropertyChanged(property)
+    end
 end
 
 function PYATV.UpdateStatus(status)
@@ -263,6 +322,33 @@ function PYATV.MigrateOldData()
 		PersistData["creds"]["Companion"] = creds_cm
 		C4:UpdateProperty("Companion Credentials","")
 	end
+
+	--Migrate properties
+	local properties = {
+		"MENU Button",
+		"GUIDE Button",
+		"INFO Button",
+		"CANCEL Button",
+		"PVR Button",
+		"STAR Button",
+		"POUND Button",
+		"RECORD Button"
+	}
+
+	local map = {
+		["Back"] = "Menu",
+		["Dashboard (Hold TV Button)"] = "Dashboard"
+	}
+
+	for i,property in pairs(properties) do
+		local value = Properties[property]
+		if (property=="PVR Button" and value=="Back") then
+			C4:UpdateProperty(property,"Screensaver")
+		elseif (map[value]) then
+			C4:UpdateProperty(property,map[value])
+		end
+	end
+
 end
 
 --PAIRING
@@ -476,7 +562,7 @@ function PYATV.RemoteCommand(cmd,action)
 	dbg ("CMD: "..cmd)
 
 	--top menu does not accept action parameter
-	if (cmd=="top_menu" and action=="Hold") then
+	if ((cmd=="top_menu" or cmd=="home_hold") and action=="Hold") then
 		cmd = "home_hold"
 		action = nil
 	end
@@ -490,32 +576,114 @@ function PYATV.RemoteCommand(cmd,action)
 	PYATV.UrlCall("/remote",nil,"post",data)
 end
 
-function PYATV.RemoteCommandHold(cmd,action)
+function PYATV.RemoteCommandHold(rawCmd,tParams)
 	dbg ("---Remote Command (Hold)---")
-	dbg ("CMD: "..cmd)
-	cmd = string.match(cmd,"start_(.*)") or string.match(cmd,"stop_(.*)") or cmd
-	dbg ("CMD new: "..cmd)
+	dbg ("Raw cmd: "..rawCmd)
+
+	local cmd = rawCmd
+	local action = nil
 	
-	if (action == "start") then
+
+	local actions = {"start","stop","begin","end"}
+	for i,a in pairs(actions) do
+		local str = rawCmd:match(a.."_(.*)")
+		if (str) then
+			action = a
+			cmd = str
+			dbg("CMD: "..cmd.." Action: "..action)
+		end
+	end
+	
+	if (action=="start") then
 	   dbg("Starting hold timer...")
 	   PYATV.RemoteCommand(cmd)
 	   Timer["holdAction"] = C4:SetTimer(100, function(timer)
-							if (Timer["holdAction"] == "stop") then
-								timer:Cancel()
-							else
-								PYATV.RemoteCommand(cmd)
-						     end
-						end, true)
+			PYATV.RemoteCommand(cmd)
+		end, true)
 	
-    elseif (action == "sendCmd") then
+    elseif (action=="begin") then
+		local timeout = Properties["Button Hold Threshold"] + 250 --give some overhead in case of signal delays
+		dbg("Begin timeout timer for "..timeout.."ms")
+		Timer["endAction"] = C4:SetTimer(timeout, function(timer)
+			if (Timer["endAction"] ~= nil) then
+				PYATV.RemoteCommand(cmd,"Hold")
+			else
+				dbg("Timer is nil, stopping...")
+				timer:Cancel()
+			end
+		end, false)
+		return
+
+	elseif (action=="end" and Timer["endAction"]) then
+		dbg("Stopping end timer...")
+	    Timer["endAction"] = nil
 	   
-		PYATV.RemoteCommand(cmd,"Hold")
-	   
-    elseif (action == "stop") then
+    elseif (action=="stop" and Timer["holdAction"]) then
 		dbg("Stopping hold timer...")
-	    Timer["holdAction"] = "stop"
+	    Timer["holdAction"]:Cancel()
     end
+
+	local duration = tonumber(tParams.DURATION)
+	local threshold = tonumber(Properties["Button Hold Threshold"])
+	dbg("Button duration: "..duration)
+	if (duration and (duration < threshold)) then
+		dbg("Duration "..duration.." is less than threshold, sending non-hold command...")
+		PYATV.RemoteCommand(cmd)
+		Timer["endAction"] = nil
+		return
+	end
 	   
+end
+
+function PYATV.SetRemoteMapping(button,value)
+	local cmd = REMOTE_MAPPINGS.values[value]
+
+	if (cmd==nil) then
+		dbg("nil button, skipping: "..button)
+		return
+	end
+
+	dbg("Remapping "..button.." to "..cmd)
+
+	if (REMOTE_CMDS[button]) then
+		REMOTE_CMDS[button] = cmd
+	elseif (REMOTE_HOLD_CMDS[button]) then
+		REMOTE_HOLD_CMDS[button] = cmd
+	end
+
+	--Map actions, prefix begin_ for timers
+	--Could be cleaned up a bit with for loops
+	local action = nil
+	local testAction = "END_"..button
+
+	if (REMOTE_CMDS[testAction]) then
+		action = "end_"..cmd
+		REMOTE_CMDS[testAction] = action
+		action = "begin_"..cmd
+		REMOTE_CMDS[button] = action
+	elseif (REMOTE_HOLD_CMDS[testAction]) then
+		action = "end_"..cmd
+		REMOTE_HOLD_CMDS[testAction] = action
+		action = "begin_"..cmd
+		REMOTE_HOLD_CMDS[button] = action
+	end
+
+	if (action) then
+		dbg("Remapping "..testAction.." to "..action)
+	end
+
+end
+
+--KEYBOARD
+
+function PYATV.Keyboard(str,action)
+	local data = {
+		id = PersistData["DeviceID"],
+		string = str,
+		action = action
+	}
+
+	PYATV.UrlCall("/keyboard",nil,"post",data)
 end
 
 --MEDIA GENERATION
@@ -734,10 +902,7 @@ function OnDriverLateInit()
 	KillAllTimers()
     C4:urlSetTimeout(10)
 
-	--Makes sure custom buttons work
-    for property, _ in pairs(Properties) do
-        OnPropertyChanged(property)
-    end
+	LoadProperties()
 
 	--Hide app switcher in all rooms
     if (USES_DEDICATED_SWITCHER) then
@@ -767,18 +932,26 @@ function OnWatchedVariableChanged (idDevice, idVariable, strValue)
 	end
 end
 
+--ON PROPERTY CHANGED
+
 function OnPropertyChanged (strProperty)
 	local value = Properties [strProperty]
 	if (value == nil) then
 		value = ''
 	end
 	if (DEBUGPRINT) then
-		local output = {"--- OnPropertyChanged: "..strProperty, value}
+		local output = "--- OnPropertyChanged: "..strProperty..": "..value
 		print (output)
 	end
 	local success, ret
 	strProperty = string.gsub (strProperty, '%s+', '_')
-	if (OPC and OPC [strProperty] and type (OPC [strProperty]) == 'function') then
+	dbg("strProperty: "..strProperty)
+
+	--Check for buttons
+	local button = string.match(strProperty,"(.*)_Button")
+	if (button) then
+		PYATV.SetRemoteMapping(button,value)
+	elseif (OPC and OPC [strProperty] and type (OPC [strProperty]) == 'function') then
 		success, ret = pcall (OPC [strProperty], value)
 	end
 	if (success == true) then
@@ -787,8 +960,6 @@ function OnPropertyChanged (strProperty)
 		print ('OnPropertyChanged Lua error: ', strProperty, ret)
 	end
 end
-
---ON PROPERTY CHANGED
 
 function OPC.Debug_Mode (value)
 	if (DEBUGPRINT) then
@@ -836,124 +1007,6 @@ function OPC.On_Power_On (value)
 	end
 end
 
-function OPC.MENU_Button (value)
-	if (value == 'Do Nothing') then
-		CMDS.MENU = nil
-	elseif (value == 'Home') then
-		CMDS.MENU = 'top_menu'
-	elseif (value == 'Back') then
-		CMDS.MENU = 'cancel'
-	elseif (value == 'Menu') then
-		CMDS.MENU = 'menu'
-	elseif (value == 'Dashboard (Hold TV Button)') then
-		CMDS.MENU = 'home_hold'
-	end
-end
-
-function OPC.GUIDE_Button (value)
-	if (value == 'Do Nothing') then
-		CMDS.GUIDE = nil
-	elseif (value == 'Home') then
-		CMDS.GUIDE = 'top_menu'
-	elseif (value == 'Back') then
-		CMDS.GUIDE = 'cancel'
-	elseif (value == 'Menu') then
-		CMDS.GUIDE = 'menu'
-	elseif (value == 'Dashboard (Hold TV Button)') then
-		CMDS.GUIDE = 'home_hold'
-	end
-end
-
-function OPC.INFO_Button (value)
-	if (value == 'Do Nothing') then
-		CMDS.INFO = nil
-	elseif (value == 'Home') then
-		CMDS.INFO = 'top_menu'
-	elseif (value == 'Back') then
-		CMDS.INFO = 'cancel'
-	elseif (value == 'Menu') then
-		CMDS.INFO = 'menu'
-	elseif (value == 'Dashboard (Hold TV Button)') then
-		CMDS.INFO = 'home_hold'
-	end
-end
-
-function OPC.CANCEL_Button (value)
-	if (value == 'Do Nothing') then
-		CMDS.CANCEL = nil
-	elseif (value == 'Home') then
-		CMDS.CANCEL = 'top_menu'
-	elseif (value == 'Back') then
-		CMDS.CANCEL = 'cancel'
-	elseif (value == 'Menu') then
-		CMDS.CANCEL = 'menu'
-	elseif (value == 'Dashboard (Hold TV Button)') then
-		CMDS.CANCEL = 'home_hold'
-	end
-end
-
-function OPC.PVR_Button (value)
-	if (value == 'Do Nothing') then
-		CMDS.PVR = nil
-	elseif (value == 'Home') then
-		CMDS.PVR = 'top_menu'
-	elseif (value == 'Back') then
-		CMDS.PVR = 'cancel'
-	elseif (value == 'Menu') then
-		CMDS.PVR = 'menu'
-	elseif (value == 'Dashboard (Hold TV Button)') then
-		CMDS.PVR = 'home_hold'
-	end
-end
-
-function OPC.STAR_Button (value)
-	if (value == 'Do Nothing') then
-		CMDS.STAR = nil
-	elseif (value == 'Home') then
-		CMDS.STAR = 'top_menu'
-	elseif (value == 'Back') then
-		CMDS.STAR = 'cancel'
-	elseif (value == 'Menu') then
-		CMDS.STAR = 'menu'
-	elseif (value == 'Dashboard (Hold TV Button)') then
-		CMDS.STAR = 'home_hold'
-	elseif (value == 'Play/Pause') then
-		CMDS.RECORD = 'play_pause'
-	end
-end
-
-function OPC.POUND_Button (value)
-	if (value == 'Do Nothing') then
-		CMDS.POUND = nil
-	elseif (value == 'Home') then
-		CMDS.POUND = 'top_menu'
-	elseif (value == 'Back') then
-		CMDS.POUND = 'cancel'
-	elseif (value == 'Menu') then
-		CMDS.POUND = 'menu'
-	elseif (value == 'Dashboard (Hold TV Button)') then
-		CMDS.POUND = 'home_hold'
-	elseif (value == 'Play/Pause') then
-		CMDS.RECORD = 'play_pause'
-	end
-end
-
-function OPC.RECORD_Button (value)
-	if (value == 'Do Nothing') then
-		CMDS.RECORD = nil
-	elseif (value == 'Home') then
-		CMDS.RECORD = 'top_menu'
-	elseif (value == 'Back') then
-		CMDS.RECORD = 'cancel'
-	elseif (value == 'Menu') then
-		CMDS.RECORD = 'menu'
-	elseif (value == 'Dashboard (Hold TV Button)') then
-		CMDS.RECORD = 'home_hold'
-	elseif (value == 'Play/Pause') then
-		CMDS.RECORD = 'play_pause'
-	end
-end
-
 --RECEIVED FROM PROXY
 
 function ReceivedFromProxy (idBinding, strCommand, tParams)
@@ -980,7 +1033,13 @@ function ReceivedFromProxy (idBinding, strCommand, tParams)
 		strCommand = tParams.PASSTHROUGH_COMMAND
 	end
 	if (idBinding == MSP_PROXY) then
-		if (MSP[strCommand] ~= nil) and (type(MSP[strCommand])=='function') then
+		if (REMOTE_CMDS[strCommand]) then
+			PYATV.RemoteCommand(REMOTE_CMDS[strCommand])
+		elseif (REMOTE_HOLD_CMDS[strCommand]) then
+			PYATV.RemoteCommandHold(REMOTE_HOLD_CMDS[strCommand],tParams)
+		elseif (KEYBOARD_CMDS[strCommand]) then
+			PYATV.Keyboard(strCommand,"append")
+		elseif (MSP[strCommand] ~= nil) and (type(MSP[strCommand])=='function') then
 			MSP[strCommand] (idBinding, strCommand, tParams, args)
 		end
 	end
@@ -1088,274 +1147,6 @@ function MSP.OFF (idBinding, strCommand, tParams, args)
 	end
 	--revisit?
 	C4:SetVariable("Service", "OFF")
-end
-
-function MSP.MENU (idBinding, strCommand, tParams, args)
-	local pytvCommand = CMDS [strCommand]
-	--if (pytvCommand ~= nil) then
-	--	PYATV.RemoteCommand (pytvCommand)
-	--end
-	--Moved to END_MENU in favor of home hold
-end
-
-function MSP.GUIDE (idBinding, strCommand, tParams, args)
-	local pytvCommand = CMDS [strCommand]
-	if (pytvCommand ~= nil) then
-		PYATV.RemoteCommand (pytvCommand)
-	end
-end
-
-function MSP.INFO (idBinding, strCommand, tParams, args)
-	local pytvCommand = CMDS [strCommand]
-	if (pytvCommand ~= nil) then
-		PYATV.RemoteCommand (pytvCommand)
-	end
-end
-
-function MSP.CANCEL (idBinding, strCommand, tParams, args)
-	local pytvCommand = CMDS [strCommand]
-	if (pytvCommand ~= nil) then
-		PYATV.RemoteCommand (pytvCommand)
-	end
-end
-
-function MSP.PVR (idBinding, strCommand, tParams, args)
-	local pytvCommand = CMDS [strCommand]
-	if (pytvCommand ~= nil) then
-		PYATV.RemoteCommand (pytvCommand)
-	end
-end
-
-function MSP.STAR (idBinding, strCommand, tParams, args)
-	local pytvCommand = CMDS [strCommand]
-	if (pytvCommand ~= nil) then
-		PYATV.RemoteCommand (pytvCommand)
-	end
-end
-
-function MSP.POUND (idBinding, strCommand, tParams, args)
-	local pytvCommand = CMDS [strCommand]
-	if (pytvCommand ~= nil) then
-		PYATV.RemoteCommand (pytvCommand)
-	end
-end
-
-function MSP.UP (idBinding, strCommand, tParams, args)
-	local pytvCommand = CMDS [strCommand]
-	if (pytvCommand ~= nil) then
-		PYATV.RemoteCommand (pytvCommand)
-	end
-end
-
-function MSP.DOWN (idBinding, strCommand, tParams, args)
-	local pytvCommand = CMDS [strCommand]
-	if (pytvCommand ~= nil) then
-		PYATV.RemoteCommand (pytvCommand)
-	end
-end
-
-function MSP.LEFT (idBinding, strCommand, tParams, args)
-	local pytvCommand = CMDS [strCommand]
-	if (pytvCommand ~= nil) then
-		PYATV.RemoteCommand (pytvCommand)
-	end
-end
-
-function MSP.RIGHT (idBinding, strCommand, tParams, args)
-	local pytvCommand = CMDS [strCommand]
-	if (pytvCommand ~= nil) then
-		PYATV.RemoteCommand (pytvCommand)
-	end
-end
-
-function MSP.ENTER (idBinding, strCommand, tParams, args)
-	local pytvCommand = CMDS [strCommand]
-	if (pytvCommand ~= nil) then
-		--PYATV.RemoteCommand (pytvCommand) -- Single Press vs. Hold determined by duration of END_ENTER
-	end
-end
-
-function MSP.END_ENTER (idBinding, strCommand, tParams, args)
-	local pytvCommand = CMDS [strCommand]
-	if (pytvCommand ~= nil) then
-		  
-	     if (tonumber(tParams["DURATION"]) > tonumber(Properties["Button Hold Threshold"])) then
-		  PYATV.RemoteCommandHold (pytvCommand, "sendCmd")
-		else
-		  PYATV.RemoteCommand (pytvCommand)
-	     end
-	end
-end
-
-function MSP.END_MENU (idBinding, strCommand, tParams, args)
-	local pytvCommand = CMDS.MENU --[strCommand]
-	if (pytvCommand ~= nil) then
-		  
-	     if (tonumber(tParams["DURATION"]) > tonumber(Properties["Button Hold Threshold"])) then
-		  PYATV.RemoteCommandHold (pytvCommand, "sendCmd")
-		else
-		  PYATV.RemoteCommand (pytvCommand)
-	     end
-	end
-end
-
-function MSP.END_CANCEL (idBinding, strCommand, tParams, args)
-	local pytvCommand = CMDS.CANCEL --[strCommand]
-	if (pytvCommand ~= nil) then
-		  
-	     if (tonumber(tParams["DURATION"]) > tonumber(Properties["Button Hold Threshold"])) then
-		  PYATV.RemoteCommandHold (pytvCommand, "sendCmd")
-		else
-		  PYATV.RemoteCommand (pytvCommand)
-	     end
-	end
-end
-
-function MSP.START_UP (idBinding, strCommand, tParams, args)
-	local pytvCommand = CMDS [strCommand]
-	if (pytvCommand ~= nil) then
-		PYATV.RemoteCommandHold (pytvCommand, "start")
-	end
-end
-
-function MSP.START_DOWN (idBinding, strCommand, tParams, args)
-	local pytvCommand = CMDS [strCommand]
-	if (pytvCommand ~= nil) then
-		PYATV.RemoteCommandHold (pytvCommand, "start")
-	end
-end
-
-function MSP.START_LEFT (idBinding, strCommand, tParams, args)
-	local pytvCommand = CMDS [strCommand]
-	if (pytvCommand ~= nil) then
-		PYATV.RemoteCommandHold (pytvCommand, "start")
-	end
-end
-
-function MSP.START_RIGHT (idBinding, strCommand, tParams, args)
-	local pytvCommand = CMDS [strCommand]
-	if (pytvCommand ~= nil) then
-		PYATV.RemoteCommandHold (pytvCommand, "start")
-	end
-end
-
-function MSP.STOP_UP (idBinding, strCommand, tParams, args)
-	local pytvCommand = CMDS [strCommand]
-	if (pytvCommand ~= nil) then
-		PYATV.RemoteCommandHold (pytvCommand, "stop")
-	end
-end
-
-function MSP.STOP_DOWN (idBinding, strCommand, tParams, args)
-	local pytvCommand = CMDS [strCommand]
-	if (pytvCommand ~= nil) then
-		PYATV.RemoteCommandHold (pytvCommand, "stop")
-	end
-end
-
-function MSP.STOP_LEFT (idBinding, strCommand, tParams, args)
-	local pytvCommand = CMDS [strCommand]
-	if (pytvCommand ~= nil) then
-		PYATV.RemoteCommandHold (pytvCommand, "stop")
-	end
-end
-
-function MSP.STOP_RIGHT (idBinding, strCommand, tParams, args)
-	local pytvCommand = CMDS [strCommand]
-	if (pytvCommand ~= nil) then
-		PYATV.RemoteCommandHold (pytvCommand, "stop")
-	end
-end
-
-function MSP.PLAY (idBinding, strCommand, tParams, args)
-	local pytvCommand = CMDS [strCommand]
-	if (pytvCommand ~= nil) then
-		PYATV.RemoteCommand (pytvCommand)
-	end
-end
-
-function MSP.PAUSE (idBinding, strCommand, tParams, args)
-	local pytvCommand = CMDS [strCommand]
-	if (pytvCommand ~= nil) then
-		PYATV.RemoteCommand (pytvCommand)
-	end
-end
-
-function MSP.PLAYPAUSE (idBinding, strCommand, tParams, args)
-	local pytvCommand = CMDS [strCommand]
-	if (pytvCommand ~= nil) then
-		PYATV.RemoteCommand (pytvCommand)
-	end
-end
-
-function MSP.STOP (idBinding, strCommand, tParams, args)
-	local pytvCommand = CMDS [strCommand]
-	if (pytvCommand ~= nil) then
-		PYATV.RemoteCommand (pytvCommand)
-	end
-end
-
-function MSP.SCAN_FWD (idBinding, strCommand, tParams, args)
-	local pytvCommand = CMDS [strCommand]
-	if (pytvCommand ~= nil) then
-		PYATV.RemoteCommand (pytvCommand)
-	end
-end
-
-function MSP.SCAN_REV (idBinding, strCommand, tParams, args)
-	local pytvCommand = CMDS [strCommand]
-	if (pytvCommand ~= nil) then
-		PYATV.RemoteCommand (pytvCommand)
-	end
-end
-
-function MSP.SKIP_FWD (idBinding, strCommand, tParams, args)
-	local pytvCommand = CMDS [strCommand]
-	if (pytvCommand ~= nil) then
-		PYATV.RemoteCommand (pytvCommand)
-	end
-end
-
-function MSP.SKIP_REV (idBinding, strCommand, tParams, args)
-	local pytvCommand = CMDS [strCommand]
-	if (pytvCommand ~= nil) then
-		PYATV.RemoteCommand (pytvCommand)
-	end
-end
-
-function MSP.START_SCAN_FWD (idBinding, strCommand, tParams, args)
-	local pytvCommand = CMDS [strCommand]
-	if (pytvCommand ~= nil) then
-		PYATV.RemoteCommandHold (pytvCommand, "start")
-	end
-end
-
-function MSP.START_SCAN_REV (idBinding, strCommand, tParams, args)
-	local pytvCommand = CMDS [strCommand]
-	if (pytvCommand ~= nil) then
-		PYATV.RemoteCommandHold (pytvCommand, "start")
-	end
-end
-
-function MSP.STOP_SCAN_FWD (idBinding, strCommand, tParams, args)
-	local pytvCommand = CMDS [strCommand]
-	if (pytvCommand ~= nil) then
-		PYATV.RemoteCommandHold (pytvCommand, "stop")
-	end
-end
-
-function MSP.STOP_SCAN_REV (idBinding, strCommand, tParams, args)
-	local pytvCommand = CMDS [strCommand]
-	if (pytvCommand ~= nil) then
-		PYATV.RemoteCommandHold (pytvCommand, "stop")
-	end
-end
-
-function MSP.RECORD (idBinding, strCommand, tParams, args)
-	local pytvCommand = CMDS [strCommand]
-	if (pytvCommand ~= nil) then
-		PYATV.RemoteCommand (pytvCommand)
-	end
 end
 
 --NAVIGATOR UI

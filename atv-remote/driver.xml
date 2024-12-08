@@ -126,9 +126,9 @@
         <items>
           <item>Do Nothing</item>
           <item>Home</item>
-          <item>Back</item>
           <item>Menu</item>
-          <item>Dashboard (Hold TV Button)</item>
+          <item>Dashboard</item>
+          <item>Screensaver</item>
         </items>
         <default>Home</default>
         <readonly>false</readonly>
@@ -139,9 +139,9 @@
         <items>
           <item>Do Nothing</item>
           <item>Home</item>
-          <item>Back</item>
           <item>Menu</item>
-          <item>Dashboard (Hold TV Button)</item>
+          <item>Dashboard</item>
+          <item>Screensaver</item>
         </items>
         <default>Menu</default>
         <readonly>false</readonly>
@@ -152,11 +152,11 @@
         <items>
           <item>Do Nothing</item>
           <item>Home</item>
-          <item>Back</item>
           <item>Menu</item>
-          <item>Dashboard (Hold TV Button)</item>
+          <item>Dashboard</item>
+          <item>Screensaver</item>
         </items>
-        <default>Dashboard (Hold TV Button)</default>
+        <default>Dashboard</default>
         <readonly>false</readonly>
       </property>
       <property>
@@ -165,9 +165,9 @@
         <items>
           <item>Do Nothing</item>
           <item>Home</item>
-          <item>Back</item>
           <item>Menu</item>
-          <item>Dashboard (Hold TV Button)</item>
+          <item>Dashboard</item>
+          <item>Screensaver</item>
         </items>
         <default>Menu</default>
         <readonly>false</readonly>
@@ -178,11 +178,11 @@
         <items>
           <item>Do Nothing</item>
           <item>Home</item>
-          <item>Back</item>
           <item>Menu</item>
-          <item>Dashboard (Hold TV Button)</item>
+          <item>Dashboard</item>
+          <item>Screensaver</item>
         </items>
-        <default>Back</default>
+        <default>Screensaver</default>
         <readonly>false</readonly>
       </property>
       <property>
@@ -191,9 +191,9 @@
         <items>
           <item>Do Nothing</item>
           <item>Home</item>
-          <item>Back</item>
           <item>Menu</item>
-          <item>Dashboard (Hold TV Button)</item>
+          <item>Dashboard</item>
+          <item>Screensaver</item>
           <item>Play/Pause</item>
         </items>
         <default>Do Nothing</default>
@@ -205,9 +205,9 @@
         <items>
           <item>Do Nothing</item>
           <item>Home</item>
-          <item>Back</item>
           <item>Menu</item>
-          <item>Dashboard (Hold TV Button)</item>
+          <item>Dashboard</item>
+          <item>Screensaver</item>
           <item>Play/Pause</item>
         </items>
         <default>Do Nothing</default>
@@ -219,9 +219,9 @@
         <items>
           <item>Do Nothing</item>
           <item>Home</item>
-          <item>Back</item>
           <item>Menu</item>
-          <item>Dashboard (Hold TV Button)</item>
+          <item>Dashboard</item>
+          <item>Screensaver</item>
           <item>Play/Pause</item>
         </items>
         <default>Play/Pause</default>
