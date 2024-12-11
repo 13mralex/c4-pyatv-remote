@@ -1133,20 +1133,11 @@ end
 --MSP REMOTE
 
 function MSP.ON (idBinding, strCommand, tParams, args)
-	local pytvCommand = CMDS [strCommand]
-	if (pytvCommand ~= nil) then
-		PYATV.RemoteCommand (pytvCommand)
-	end
-	--probably revisit
-	PYATV.Connect()
+	--need logic for Properties
 end
 
 function MSP.OFF (idBinding, strCommand, tParams, args)
-	local pytvCommand = CMDS [strCommand]
-	if (pytvCommand ~= nil) then
-		PYATV.RemoteCommand (pytvCommand)
-	end
-	--revisit?
+	--need logic for Properties
 	C4:SetVariable("Service", "OFF")
 end
 
