@@ -6,7 +6,7 @@
   <model>TV</model>
   <created>09/15/2021 12:00 AM</created>
   <modified>12/02/2024 8:00 PM</modified>
-  <version>53</version>
+  <version>54</version>
   <control>lua_gen</control>
   <driver>DriverWorks</driver>
   <small image_source="c4z">icons/device_sm.png</small>
@@ -503,6 +503,76 @@
           </List>
         </Screen>
         <Screen xsi:type="ListScreenType">
+          <Id>PresetsScreen</Id>
+          <DataCommand>
+            <!--Command sent by Navigator to the driver to retreive data for this Screen -->
+            <Name>GetPresets</Name>
+            <Type>PROTOCOL</Type>
+            <Params>
+              <Param>
+                <!-- SYSTEM variable auto populated by Navigator with the Id of the current Screen -->
+                <Name>screenId</Name>
+                <Type>SYSTEM</Type>
+                <Value>screenId</Value>
+              </Param>
+              <Param>
+                <!-- SYSTEM variable auto populated by Navigator with the Id of the currently selected Tab -->
+                <Name>tabId</Name>
+                <Type>SYSTEM</Type>
+                <Value>tabId</Value>
+              </Param>
+              <Param>
+                <!-- SYSTEM variable auto populated by Navigator with the depth (starting at 1) into the browse of this Tab -->
+                <Name>screenDepth</Name>
+                <Type>SYSTEM</Type>
+                <Value>screenDepth</Value>
+              </Param>
+              <Param>
+                <Name>id</Name>
+                <Type>FIRST_SELECTED</Type>
+                <Value>id</Value>
+              </Param>
+              <Param>
+                <Name>title</Name>
+                <Type>FIRST_SELECTED</Type>
+                <Value>title</Value>
+              </Param>
+            </Params>
+          </DataCommand>
+          <RequiresRefresh>true</RequiresRefresh>
+          <PaginationStyle>NONE</PaginationStyle>
+          <List>
+            <!-- List for Screen is defined the same way as the List for NowPlaying; there are some additional options: -->
+            <DefaultAction>UIPresetSelection</DefaultAction>
+            <ItemDefaultActionProperty>action</ItemDefaultActionProperty>
+            <ItemActionIdsProperty>actions_list</ItemActionIdsProperty>
+            <TitleProperty>title</TitleProperty>
+            <SubTitleProperty>subtitle</SubTitleProperty>
+            <ImageProperty>image_list</ImageProperty>
+            <LengthProperty>duration</LengthProperty>
+            <!-- IsLink only puts a > at the end of the item.  You still need to define an action for it. -->
+            <IsLink>
+              <Property>isLink</Property>
+              <ValidValues>
+                <Value>true</Value>
+              </ValidValues>
+            </IsLink>
+            <IsHeader>
+              <Property>isHeader</Property>
+              <ValidValues>
+                <Value>true</Value>
+              </ValidValues>
+            </IsHeader>
+            <!-- If true, Navigator will try to translate the Title and SubTitle using the .po files provided by the driver -->
+            <WillTranslate>
+              <Property>translate</Property>
+              <ValidValues>
+                <Value>true</Value>
+              </ValidValues>
+            </WillTranslate>
+          </List>
+        </Screen>
+        <Screen xsi:type="ListScreenType">
           <Id>UIDevicesScreen</Id>
           <DataCommand>
             <!--Command sent by Navigator to the driver to retreive data for this Screen -->
@@ -573,6 +643,66 @@
           </List>
         </Screen>
         <Screen xsi:type="SettingsScreenType">
+          <Id>CreatePresetScreen</Id>
+          <DataCommand>
+            <Name>GetNewPreset</Name>
+            <Type>PROTOCOL</Type>
+          </DataCommand>
+          <RequiresRefresh>false</RequiresRefresh>
+          <Item>
+            <HeaderTxt>PRESET INFORMATION</HeaderTxt>
+          </Item>
+          <Item>
+            <Label>Name</Label>
+            <TextField propertyName="UIPresetName" />
+          </Item>
+          <Item>
+            <Label>Launch URL</Label>
+            <TextField propertyName="UIPresetLaunchURL" />
+          </Item>
+          <Item>
+            <Label>Icon URL</Label>
+            <TextField propertyName="UIPresetIconURL" />
+          </Item>
+          <Item>
+            <HeaderTxt>BUTTON ACTION</HeaderTxt>
+          </Item>
+          <Item>
+            <Label>Simulate Button Press</Label>
+            <OnOff propertyName="UIPresetButtonEnabled" />
+          </Item>
+          <Item>
+            <Label>Press After</Label>
+            <ComboBox propertyName="UIPresetButtonTime">
+              <Item>
+                <Id>1</Id>
+                <Value>1 Second</Value>
+              </Item>
+              <Item>
+                <Id>3</Id>
+                <Value>3 Seconds</Value>
+              </Item>
+              <Item>
+                <Id>1</Id>
+                <Value>5 Seconds</Value>
+              </Item>
+              <Item>
+                <Id>10</Id>
+                <Value>10 Seconds</Value>
+              </Item>
+            </ComboBox>
+          </Item>
+          <Item>
+            <Button>
+              <Name>Save</Name>
+              <Command>
+                <Name>UIStorePreset</Name>
+                <Type>PROTOCOL</Type>
+              </Command>
+            </Button>
+          </Item>
+        </Screen>
+        <Screen xsi:type="SettingsScreenType">
           <Id>SettingsScreen</Id>
           <DataCommand>
             <Name>GetSettings</Name>
@@ -628,6 +758,7 @@
       <NowPlaying>
         <ActionIds>Shuffle Repeat</ActionIds>
         <!--Id values for Action items that will always be shown on the Now Playing screen -->
+        <ActionIdsProperty>actions_list</ActionIdsProperty>
         <List>
           <!--Each XXXProperty value defines an XML tag that can appear inside each item element of the List-->
           <ItemDefaultActionProperty>default_action</ItemDefaultActionProperty>
@@ -652,6 +783,17 @@
           </IsHeader>
         </List>
       </NowPlaying>
+      <FavoriteCommand>
+        <Name>jumpToFavorite</Name>
+        <Type>PROTOCOL</Type>
+        <Params>
+          <Param>
+            <Name>id</Name>
+            <Type>FIRST_SELECTED</Type>
+            <Value>favoriteId</Value>
+          </Param>
+        </Params>
+      </FavoriteCommand>
       <Actions>
         <Action>
           <Id>UserSwitchUI</Id>
@@ -775,6 +917,64 @@
           </Command>
         </Action>
         <Action>
+          <Id>UICreatePreset</Id>
+          <Name>Create Preset</Name>
+          <Command>
+            <Name>UICreatePreset</Name>
+            <Type>PROTOCOL</Type>
+          </Command>
+        </Action>
+        <Action>
+          <Id>UIModifyPreset</Id>
+          <Name>Modify Preset</Name>
+          <Command>
+            <Name>UIModifyPreset</Name>
+            <Type>PROTOCOL</Type>
+            <Params>
+              <Param>
+                <Name>screenId</Name>
+                <Type>SYSTEM</Type>
+                <Value>screenId</Value>
+              </Param>
+              <Param>
+                <Name>tabId</Name>
+                <Type>SYSTEM</Type>
+                <Value>tabId</Value>
+              </Param>
+              <Param>
+                <Name>id</Name>
+                <Type>FIRST_SELECTED</Type>
+                <Value>id</Value>
+              </Param>
+            </Params>
+          </Command>
+        </Action>
+        <Action>
+          <Id>UIDeletePreset</Id>
+          <Name>Delete Preset</Name>
+          <Command>
+            <Name>UIDeletePreset</Name>
+            <Type>PROTOCOL</Type>
+            <Params>
+              <Param>
+                <Name>screenId</Name>
+                <Type>SYSTEM</Type>
+                <Value>screenId</Value>
+              </Param>
+              <Param>
+                <Name>tabId</Name>
+                <Type>SYSTEM</Type>
+                <Value>tabId</Value>
+              </Param>
+              <Param>
+                <Name>id</Name>
+                <Type>FIRST_SELECTED</Type>
+                <Value>id</Value>
+              </Param>
+            </Params>
+          </Command>
+        </Action>
+        <Action>
           <Id>NowPlaying</Id>
           <Name>Now Playing</Name>
           <Command>
@@ -844,6 +1044,32 @@
             </Filter>
           </Filters>
         </Action>
+        <Action>
+          <Id>FavoriteToRoom</Id>
+          <Name>Favorite To Room</Name>
+          <Command>
+            <Name>FavoriteToRoom</Name>
+            <Type>PROTOCOL</Type>
+            <Params>
+              <Param>
+                <Name>screenId</Name>
+                <Type>SYSTEM</Type>
+                <Value>screenId</Value>
+              </Param>
+              <Param>
+                <Name>tabId</Name>
+                <Type>SYSTEM</Type>
+                <Value>tabId</Value>
+              </Param>
+              <Param>
+                <Name>id</Name>
+                <Type>FIRST_SELECTED</Type>
+                <Value>id</Value>
+              </Param>
+            </Params>
+          </Command>
+          <GeneratesRoomFavorite>true</GeneratesRoomFavorite>
+          </Action>
       </Actions>
       <Dashboard>
         <!-- These are the five available elements that can be displayed on a Navigator transport bar -->

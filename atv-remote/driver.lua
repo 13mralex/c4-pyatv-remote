@@ -10,6 +10,7 @@ do	--Globals
 	DeviceList = {}
 	PairingDevice = {}
 	USER_LIST = {}
+	PRESETS = {}
 	WS = nil
 	init = "fresh"
 
@@ -912,7 +913,7 @@ function OnDriverLateInit()
 
 	init = "idle"
 
-	PYATV.ConnectDevice()
+	PYATV.Connect()
 end
 
 function OnSystemEvent (event)
@@ -1178,6 +1179,12 @@ function MSP.TabsCommand(idBinding, strCommand, tParams, args)
 		<ScreenId>AppsScreen</ScreenId>
 	   </Tab>
 	   <Tab>
+		<Id>Presets</Id>
+		<Name>Presets</Name>
+		<IconId>tab_explore</IconId>
+		<ScreenId>PresetsScreen</ScreenId>
+	   </Tab>
+	   <Tab>
 		  <Id>Settings</Id>
 		  <Name>Settings</Name>
 		  <IconId>tab_explore</IconId>
@@ -1333,6 +1340,169 @@ function MSP.GetSettings(idBinding, strCommand, tParams, args)
     local data = settings
     DataReceived(idBinding, tParams["NAVID"], tParams["SEQ"], data)
     
+end
+
+function MSP.GetPresets(idBinding, strCommand, tParams, args)
+
+
+	local d = [[
+		<List>
+			<item><title>Create Preset</title><isHeader>true</isHeader></item>
+			<item>
+				<title>Click to create a preset</title>
+				<action>UICreatePreset</action>
+			</item>
+			<item><title>Presets</title><isHeader>true</isHeader></item>
+	]]
+
+	if (PersistData.presets == nil) then
+		PersistData.presets = {}
+	end
+
+	for k,v in pairs(PersistData.presets) do
+		local p = "<item><title>"..v.UIPresetName.."</title>"
+		p = p.."<image_list>"..XMLEncode(v.UIPresetIconURL).."</image_list>"
+		p = p.."<actions_list>FavoriteToRoom UIModifyPreset UIDeletePreset</actions_list>"
+		p = p.."<id>"..k.."</id>"
+		p = p.."</item>"
+		d = d..p
+	end
+
+	d = d.."</List>"
+    
+    DataReceived(idBinding, tParams["NAVID"], tParams["SEQ"], d)
+
+end
+
+function MSP.GetNewPreset(idBinding, strCommand, tParams, args)
+	
+	local p = "<Settings>"
+	p = p.."<UIPresetName>"..PRESETS.Create.UIPresetName.."</UIPresetName>"
+	p = p.."<UIPresetLaunchURL>"..XMLEncode(PRESETS.Create.UIPresetLaunchURL).."</UIPresetLaunchURL>"
+	p = p.."<UIPresetIconURL>"..XMLEncode(PRESETS.Create.UIPresetIconURL).."</UIPresetIconURL>"
+	p = p.."<UIPresetButtonEnabled>"..PRESETS.Create.UIPresetButtonEnabled.."</UIPresetButtonEnabled>"
+	p = p.."<UIPresetButtonTime>"..PRESETS.Create.UIPresetButtonTime.."</UIPresetButtonTime>"
+
+	p = p.."</Settings>"
+
+    DataReceived(idBinding, tParams["NAVID"], tParams["SEQ"], p)
+end
+
+function MSP.UICreatePreset(idBinding, strCommand, tParams, args)
+	PRESETS.Create = {
+		UIPresetName = "",
+		UIPresetLaunchURL = "",
+		UIPresetIconURL = "",
+		UIPresetButtonEnabled = "off",
+		UIPresetButtonTime = 3
+	}
+	PRESETS.CreateID = nil
+    local screen = "<NextScreen>CreatePresetScreen</NextScreen>"
+    DataReceived(idBinding, tParams["NAVID"], tParams["SEQ"], screen)
+end
+
+function MSP.UIModifyPreset(idBinding, strCommand, tParams, args)
+
+	local id = tonumber(args.id)
+	local preset = PersistData.presets[id]
+
+	PRESETS.Create = preset
+	PRESETS.CreateID = id
+
+    local screen = "<NextScreen>CreatePresetScreen</NextScreen>"
+    DataReceived(idBinding, tParams["NAVID"], tParams["SEQ"], screen)
+end
+
+function MSP.UIDeletePreset(idBinding, strCommand, tParams, args)
+
+	local id = tonumber(args.id)
+	PersistData.presets[id] = nil
+
+    local screen = "<NextScreen>PresetsScreen</NextScreen>"
+    DataReceived(idBinding, tParams["NAVID"], tParams["SEQ"], screen)
+end
+
+function MSP.UIStorePreset(idBinding, strCommand, tParams, args)
+    dbg("STORE PRESET")
+
+	local preset = {
+		UIPresetName = PRESETS.Create.UIPresetName,
+		UIPresetLaunchURL = PRESETS.Create.UIPresetLaunchURL,
+		UIPresetIconURL = PRESETS.Create.UIPresetIconURL,
+		UIPresetButtonEnabled = PRESETS.Create.UIPresetButtonEnabled,
+		UIPresetButtonTime = PRESETS.Create.UIPresetButtonTime
+	}
+
+	local id = PRESETS.CreateID
+
+	if (id) then
+		PersistData.presets[id] = PRESETS.Create
+	else
+		table.insert(PersistData.presets,preset)
+	end
+
+	PRESETS.Create = {
+		UIPresetName = "",
+		UIPresetLaunchURL = "",
+		UIPresetIconURL = "",
+		UIPresetButtonEnabled = "off",
+		UIPresetButtonTime = 3
+	}
+
+	PRESETS.CreateID = nil
+
+	local screen = "<NextScreen>PresetsScreen</NextScreen>"
+    DataReceived(idBinding, tParams["NAVID"], tParams["SEQ"], screen)
+end
+
+function MSP.FavoriteToRoom(idBinding, strCommand, tParams, args)
+
+	local screen = args.screenId
+	local id = args.id
+	local favorite = ""
+
+	if (screen=="PresetsScreen") then
+		id = tonumber(id)
+		local preset = PersistData.presets[id]
+
+		local f = "<FavoriteResponse><Title>"..preset.UIPresetName.."</Title>"
+		f = f.."<ImageUrl width='512' height='512'>"..XMLEncode(preset.UIPresetIconURL).."</ImageUrl>"
+		f = f.."<Context><favoriteId>"..id.."</favoriteId></Context></FavoriteResponse>"
+		favorite = f
+	end
+
+    DataReceived(idBinding, tParams["NAVID"], tParams["SEQ"], favorite)
+end
+
+function MSP.jumpToFavorite(idBinding, strCommand, tParams, args)
+	local id = tonumber(args.id)
+	local preset = PersistData.presets[id]
+	local url = preset.UIPresetLaunchURL
+	dbg("Launch preset with url: "..url)
+	PYATV.LaunchApp(url)
+
+	local buttonEnabled = preset.UIPresetButtonEnabled
+	local buttonTime = tonumber(preset.UIPresetButtonTime)*1000
+	if (buttonEnabled=="on") then
+		local button = "select"
+		dbg("Button is enabled. Will fire "..button.." after "..buttonTime.." seconds...")
+		C4:SetTimer(buttonTime, function(timer)
+			PYATV.RemoteCommand(button)
+		end, false)
+	end
+end
+
+function MSP.SettingChanged(idBinding, strCommand, tParams, args)
+	local screen = args.ScreenId
+	local property = args.PropertyName
+	local value = args.Value
+
+	if (screen=="CreatePresetScreen") then
+		if (PRESETS.Create == nil) then
+			PRESETS.Create = {}
+		end
+		PRESETS.Create[property] = value
+	end
 end
 
 --Other misc from old driver

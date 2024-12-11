@@ -404,6 +404,13 @@ class ATV:
             return self.failed
             
         art = await atv.metadata.artwork()
+        art_id = atv.metadata.artwork_id
+
+        if art_id:
+            try:
+                art_id = art_id.format(w=512,h=512)
+            except:
+                pass
 
         media = {
             "album": metadata.album,
@@ -421,15 +428,9 @@ class ATV:
             "hash": metadata.hash,
             "media_type": metadata.media_type.name,
             "state": metadata.device_state.name,
-            "artwork": True if art else False
+            "artwork": True if art else False,
+            "artwork_id": art_id
         }
-
-        """ app = {
-            "name": atv.metadata.app.name,
-            "identifier": atv.metadata.app.identifier,
-            "icon": self.get_icon(atv.metadata.app.identifier)
-        } """
-
         app = self.get_app(atv.metadata.app)
 
         state = {
@@ -463,11 +464,13 @@ class ATV:
         appId = app.identifier
 
         if appId in APPLE_BUNDLES:
+            #logging.info(f"Found {appId}: {APPLE_BUNDLES[appId]['id']}")
+            newId = APPLE_BUNDLES[appId].get("id") or app.identifier
             a = {
                 "name": APPLE_BUNDLES[appId].get("name") or app.name,
-                "id": APPLE_BUNDLES[appId].get("id") or app.identifier,
+                "id": app.identifier, #APPLE_BUNDLES[appId].get("id") want to return original id for launching purposes
             }
-            a["icon"] = self.get_icon(a["id"])
+            a["icon"] = self.get_icon(newId)
         else:
             a = {
                 "name": app.name,
@@ -497,14 +500,19 @@ class ATV:
 
         if not icon:
             logging.info(f"Getting app icon for {id}")
-            url = f"http://itunes.apple.com/lookup?bundleId={id}"
-            resp = requests.get(url)
-            data = resp.json()
+            
+            try:
+                url = f"http://itunes.apple.com/lookup?bundleId={id}"
+                resp = requests.get(url,timeout=0.3)
+                data = resp.json()
 
-            if data["resultCount"] > 0:
-                icon = data["results"][0]["artworkUrl512"]
-                icon_cache[id] = icon
-            else:
+                if data["resultCount"] > 0:
+                    icon = data["results"][0]["artworkUrl512"]
+                    icon_cache[id] = icon
+                else:
+                    icon = None
+            except:
+                logging.warning(f"Failed to get icon. Is the internet reachable?")
                 icon = None
             
         icon_cache_file.write(json.dumps(icon_cache,indent=2))
