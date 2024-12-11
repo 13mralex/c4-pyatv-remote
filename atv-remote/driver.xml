@@ -5,8 +5,8 @@
   <name>Apple TV IP Control</name>
   <model>TV</model>
   <created>09/15/2021 12:00 AM</created>
-  <modified>12/02/2024 8:00 PM</modified>
-  <version>54</version>
+  <modified>12/10/2024 9:00 PM</modified>
+  <version>55</version>
   <control>lua_gen</control>
   <driver>DriverWorks</driver>
   <small image_source="c4z">icons/device_sm.png</small>
@@ -240,6 +240,16 @@
         </params>
       </command>
       <command>
+        <name>Select Preset</name>
+        <description>Select preset PARAM1 on NAME</description>
+        <params>
+          <param>
+            <name>Preset</name>
+            <type>CUSTOM_SELECT:PresetSelection</type>
+          </param>
+        </params>
+      </command>
+      <command>
         <name>Refresh Connection</name>
         <description>Refresh connection on NAME</description>
       </command>
@@ -252,6 +262,16 @@
           <param>
             <name>App</name>
             <type>CUSTOM_SELECT:AppSelection</type>
+          </param>
+        </params>
+      </action>
+      <action>
+        <name>Select Preset</name>
+        <command>Select Preset</command>
+        <params>
+          <param>
+            <name>Preset</name>
+            <type>CUSTOM_SELECT:PresetSelection</type>
           </param>
         </params>
       </action>

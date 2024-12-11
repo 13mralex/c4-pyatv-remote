@@ -862,6 +862,17 @@ function EC.Launch_App (tParams)
 	end
 end
 
+function EC.Select_Preset (tParams)
+	print ("---Select Preset---")
+	local id = tParams.Preset
+	if (id) then
+		local data = {
+			id = id
+		}
+		MSP.jumpToFavorite(nil, nil, nil, data)
+	end
+end
+
 function EC.Refresh_Connection (tParams)
 	print ("---Refresh Connection---")
 	PYATV.Connect()
@@ -881,6 +892,16 @@ function AppSelection (currentValue) 	-- CUSTOM_SELECT from Actions and Programm
 		table.insert(APP_SELECT, { text = strAppName, value = strAppProperties.id })
 	end
 	return APP_SELECT
+end
+
+function PresetSelection (currentValue)
+	local presets = {}
+	for k,v in orderedPairs(PersistData.presets) do
+		local name = v.UIPresetName
+		local id = k
+		table.insert(presets, { text = name, value = id })
+	end
+	return presets
 end
 
 function OnDriverDestroyed ()
