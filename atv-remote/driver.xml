@@ -5,8 +5,8 @@
   <name>Apple TV IP Control</name>
   <model>TV</model>
   <created>09/15/2021 12:00 AM</created>
-  <modified>12/10/2024 9:00 PM</modified>
-  <version>55</version>
+  <modified>12/11/2024 8:00 PM</modified>
+  <version>56</version>
   <control>lua_gen</control>
   <driver>DriverWorks</driver>
   <small image_source="c4z">icons/device_sm.png</small>
@@ -91,11 +91,12 @@
         <name>On Power Off</name>
         <type>LIST</type>
         <items>
+          <item>Power Off</item>
           <item>Do Nothing</item>
           <item>Home</item>
           <item>Back</item>
           <item>Menu</item>
-          <item>Dashboard (Hold TV Button)</item>
+          <item>Dashboard</item>
         </items>
         <default>Do Nothing</default>
         <readonly>false</readonly>
@@ -104,11 +105,12 @@
         <name>On Power On</name>
         <type>LIST</type>
         <items>
+          <item>Power On</item>
           <item>Do Nothing</item>
           <item>Home</item>
           <item>Back</item>
           <item>Menu</item>
-          <item>Dashboard (Hold TV Button)</item>
+          <item>Dashboard</item>
         </items>
         <default>Do Nothing</default>
         <readonly>false</readonly>
@@ -314,6 +316,81 @@
           <Icon width="512" height="512">controller://driver/atv-remote/icons/device/experience_512.png</Icon>
           <Icon width="1024" height="1024">controller://driver/atv-remote/icons/device/experience_1024.png</Icon>
         </IconGroup>
+        <IconGroup id="amt_repeat">
+          <Icon width="20" height="20">controller://driver/atv-remote/icons/amt_repeat/amt_repeat_20.png</Icon>
+          <Icon width="30" height="30">controller://driver/atv-remote/icons/amt_repeat/amt_repeat_30.png</Icon>
+          <Icon width="40" height="40">controller://driver/atv-remote/icons/amt_repeat/amt_repeat_40.png</Icon>
+          <Icon width="50" height="50">controller://driver/atv-remote/icons/amt_repeat/amt_repeat_50.png</Icon>
+          <Icon width="60" height="60">controller://driver/atv-remote/icons/amt_repeat/amt_repeat_60.png</Icon>
+          <Icon width="70" height="70">controller://driver/atv-remote/icons/amt_repeat/amt_repeat_70.png</Icon>
+          <Icon width="80" height="80">controller://driver/atv-remote/icons/amt_repeat/amt_repeat_80.png</Icon>
+          <Icon width="90" height="90">controller://driver/atv-remote/icons/amt_repeat/amt_repeat_90.png</Icon>
+          <Icon width="100" height="100">controller://driver/atv-remote/icons/amt_repeat/amt_repeat_100.png</Icon>
+          <Icon width="110" height="110">controller://driver/atv-remote/icons/amt_repeat/amt_repeat_110.png</Icon>
+          <Icon width="120" height="120">controller://driver/atv-remote/icons/amt_repeat/amt_repeat_120.png</Icon>
+          <Icon width="130" height="130">controller://driver/atv-remote/icons/amt_repeat/amt_repeat_130.png</Icon>
+          <Icon width="140" height="140">controller://driver/atv-remote/icons/amt_repeat/amt_repeat_140.png</Icon>
+        </IconGroup>
+        <IconGroup id="amt_repeat_on">
+          <Icon width="20" height="20">controller://driver/atv-remote/icons/amt_repeat_on/amt_repeat_on_20.png</Icon>
+          <Icon width="30" height="30">controller://driver/atv-remote/icons/amt_repeat_on/amt_repeat_on_30.png</Icon>
+          <Icon width="40" height="40">controller://driver/atv-remote/icons/amt_repeat_on/amt_repeat_on_40.png</Icon>
+          <Icon width="50" height="50">controller://driver/atv-remote/icons/amt_repeat_on/amt_repeat_on_50.png</Icon>
+          <Icon width="60" height="60">controller://driver/atv-remote/icons/amt_repeat_on/amt_repeat_on_60.png</Icon>
+          <Icon width="70" height="70">controller://driver/atv-remote/icons/amt_repeat_on/amt_repeat_on_70.png</Icon>
+          <Icon width="80" height="80">controller://driver/atv-remote/icons/amt_repeat_on/amt_repeat_on_80.png</Icon>
+          <Icon width="90" height="90">controller://driver/atv-remote/icons/amt_repeat_on/amt_repeat_on_90.png</Icon>
+          <Icon width="100" height="100">controller://driver/atv-remote/icons/amt_repeat_on/amt_repeat_on_100.png</Icon>
+          <Icon width="110" height="110">controller://driver/atv-remote/icons/amt_repeat_on/amt_repeat_on_110.png</Icon>
+          <Icon width="120" height="120">controller://driver/atv-remote/icons/amt_repeat_on/amt_repeat_on_120.png</Icon>
+          <Icon width="130" height="130">controller://driver/atv-remote/icons/amt_repeat_on/amt_repeat_on_130.png</Icon>
+          <Icon width="140" height="140">controller://driver/atv-remote/icons/amt_repeat_on/amt_repeat_on_140.png</Icon>
+        </IconGroup>
+        <IconGroup id="amt_repeat_on_1">
+          <Icon width="20" height="20">controller://driver/atv-remote/icons/amt_repeat_on_1/amt_repeat_on_1_20.png</Icon>
+          <Icon width="30" height="30">controller://driver/atv-remote/icons/amt_repeat_on_1/amt_repeat_on_1_30.png</Icon>
+          <Icon width="40" height="40">controller://driver/atv-remote/icons/amt_repeat_on_1/amt_repeat_on_1_40.png</Icon>
+          <Icon width="50" height="50">controller://driver/atv-remote/icons/amt_repeat_on_1/amt_repeat_on_1_50.png</Icon>
+          <Icon width="60" height="60">controller://driver/atv-remote/icons/amt_repeat_on_1/amt_repeat_on_1_60.png</Icon>
+          <Icon width="70" height="70">controller://driver/atv-remote/icons/amt_repeat_on_1/amt_repeat_on_1_70.png</Icon>
+          <Icon width="80" height="80">controller://driver/atv-remote/icons/amt_repeat_on_1/amt_repeat_on_1_80.png</Icon>
+          <Icon width="90" height="90">controller://driver/atv-remote/icons/amt_repeat_on_1/amt_repeat_on_1_90.png</Icon>
+          <Icon width="100" height="100">controller://driver/atv-remote/icons/amt_repeat_on_1/amt_repeat_on_1_100.png</Icon>
+          <Icon width="110" height="110">controller://driver/atv-remote/icons/amt_repeat_on_1/amt_repeat_on_1_110.png</Icon>
+          <Icon width="120" height="120">controller://driver/atv-remote/icons/amt_repeat_on_1/amt_repeat_on_1_120.png</Icon>
+          <Icon width="130" height="130">controller://driver/atv-remote/icons/amt_repeat_on_1/amt_repeat_on_1_130.png</Icon>
+          <Icon width="140" height="140">controller://driver/atv-remote/icons/amt_repeat_on_1/amt_repeat_on_1_140.png</Icon>
+        </IconGroup>
+        <IconGroup id="amt_shuffle">
+          <Icon width="20" height="20">controller://driver/atv-remote/icons/amt_shuffle/amt_shuffle_20.png</Icon>
+          <Icon width="30" height="30">controller://driver/atv-remote/icons/amt_shuffle/amt_shuffle_30.png</Icon>
+          <Icon width="40" height="40">controller://driver/atv-remote/icons/amt_shuffle/amt_shuffle_40.png</Icon>
+          <Icon width="50" height="50">controller://driver/atv-remote/icons/amt_shuffle/amt_shuffle_50.png</Icon>
+          <Icon width="60" height="60">controller://driver/atv-remote/icons/amt_shuffle/amt_shuffle_60.png</Icon>
+          <Icon width="70" height="70">controller://driver/atv-remote/icons/amt_shuffle/amt_shuffle_70.png</Icon>
+          <Icon width="80" height="80">controller://driver/atv-remote/icons/amt_shuffle/amt_shuffle_80.png</Icon>
+          <Icon width="90" height="90">controller://driver/atv-remote/icons/amt_shuffle/amt_shuffle_90.png</Icon>
+          <Icon width="100" height="100">controller://driver/atv-remote/icons/amt_shuffle/amt_shuffle_100.png</Icon>
+          <Icon width="110" height="110">controller://driver/atv-remote/icons/amt_shuffle/amt_shuffle_110.png</Icon>
+          <Icon width="120" height="120">controller://driver/atv-remote/icons/amt_shuffle/amt_shuffle_120.png</Icon>
+          <Icon width="130" height="130">controller://driver/atv-remote/icons/amt_shuffle/amt_shuffle_130.png</Icon>
+          <Icon width="140" height="140">controller://driver/atv-remote/icons/amt_shuffle/amt_shuffle_140.png</Icon>
+        </IconGroup>
+        <IconGroup id="amt_shuffle_on">
+          <Icon width="20" height="20">controller://driver/atv-remote/icons/amt_shuffle_on/amt_shuffle_on_20.png</Icon>
+          <Icon width="30" height="30">controller://driver/atv-remote/icons/amt_shuffle_on/amt_shuffle_on_30.png</Icon>
+          <Icon width="40" height="40">controller://driver/atv-remote/icons/amt_shuffle_on/amt_shuffle_on_40.png</Icon>
+          <Icon width="50" height="50">controller://driver/atv-remote/icons/amt_shuffle_on/amt_shuffle_on_50.png</Icon>
+          <Icon width="60" height="60">controller://driver/atv-remote/icons/amt_shuffle_on/amt_shuffle_on_60.png</Icon>
+          <Icon width="70" height="70">controller://driver/atv-remote/icons/amt_shuffle_on/amt_shuffle_on_70.png</Icon>
+          <Icon width="80" height="80">controller://driver/atv-remote/icons/amt_shuffle_on/amt_shuffle_on_80.png</Icon>
+          <Icon width="90" height="90">controller://driver/atv-remote/icons/amt_shuffle_on/amt_shuffle_on_90.png</Icon>
+          <Icon width="100" height="100">controller://driver/atv-remote/icons/amt_shuffle_on/amt_shuffle_on_100.png</Icon>
+          <Icon width="110" height="110">controller://driver/atv-remote/icons/amt_shuffle_on/amt_shuffle_on_110.png</Icon>
+          <Icon width="120" height="120">controller://driver/atv-remote/icons/amt_shuffle_on/amt_shuffle_on_120.png</Icon>
+          <Icon width="130" height="130">controller://driver/atv-remote/icons/amt_shuffle_on/amt_shuffle_on_130.png</Icon>
+          <Icon width="140" height="140">controller://driver/atv-remote/icons/amt_shuffle_on/amt_shuffle_on_140.png</Icon>
+        </IconGroup>  
         <IconGroup id="np_repeat">
           <Icon width="20" height="20">controller://driver/atv-remote/icons/np_repeat/np_repeat_20.png</Icon>
           <Icon width="30" height="30">controller://driver/atv-remote/icons/np_repeat/np_repeat_30.png</Icon>
@@ -930,7 +1007,7 @@
         </Action>
         <Action>
           <Id>UIReconnect</Id>
-          <Name>Show Devices</Name>
+          <Name>Refresh Connection</Name>
           <Command>
             <Name>UIReconnect</Name>
             <Type>PROTOCOL</Type>
@@ -1010,7 +1087,7 @@
           <IconId>np_shuffle</IconId>
           <!-- IconGroup id value to use for this action if an icon is required-->
           <Command>
-            <Name>ToggleShuffle</Name>
+            <Name>ShuffleOn</Name>
             <!-- Command that will be sent to ReceivedFromProxy for the proxy associated with this UI element-->
             <Type>PROTOCOL</Type>
           </Command>
@@ -1042,7 +1119,7 @@
           <Name>Turn Repeat On</Name>
           <IconId>np_repeat</IconId>
           <Command>
-            <Name>ToggleRepeat</Name>
+            <Name>RepeatOn</Name>
             <Type>PROTOCOL</Type>
           </Command>
           <Filters>
@@ -1132,6 +1209,46 @@
           <ButtonType>SKIP_FWD</ButtonType>
           <ReleaseCommand>
             <Name>SKIP_FWD</Name>
+            <Type>PROTOCOL</Type>
+          </ReleaseCommand>
+        </Transport>
+        <Transport>
+          <Id>ShuffleOn</Id>
+          <ButtonType>CUSTOM</ButtonType>
+          <Name>Turn Shuffle On</Name>
+          <IconId>amt_shuffle</IconId>
+          <ReleaseCommand>
+            <Name>ShuffleOn</Name>
+            <Type>PROTOCOL</Type>
+          </ReleaseCommand>
+          </Transport>
+        <Transport>
+          <Id>ShuffleOff</Id>
+          <ButtonType>CUSTOM</ButtonType>
+          <Name>Turn Shuffle Off</Name>
+          <IconId>amt_shuffle_on</IconId>
+          <ReleaseCommand>
+            <Name>ShuffleOff</Name>
+            <Type>PROTOCOL</Type>
+          </ReleaseCommand>
+        </Transport>
+        <Transport>
+          <Id>RepeatOn</Id>
+          <ButtonType>CUSTOM</ButtonType>
+          <Name>Turn Repeat On</Name>
+          <IconId>amt_repeat</IconId>
+          <ReleaseCommand>
+            <Name>RepeatOn</Name>
+            <Type>PROTOCOL</Type>
+          </ReleaseCommand>
+        </Transport>
+        <Transport>
+          <Id>RepeatOff</Id>
+          <ButtonType>CUSTOM</ButtonType>
+          <Name>Turn Repeat Off</Name>
+          <IconId>amt_repeat_on</IconId>
+          <ReleaseCommand>
+            <Name>RepeatOff</Name>
             <Type>PROTOCOL</Type>
           </ReleaseCommand>
         </Transport>

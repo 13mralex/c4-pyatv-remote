@@ -24,6 +24,8 @@ do	--Globals
 
 	REMOTE_MAPPINGS = {
 		values = {
+			['Power On']	= 'turn_on',
+			['Power Off']	= 'turn_off',
 			['Do Nothing']	= nil,
 			['Home']		= 'top_menu',
 			['Menu']		= 'menu',
@@ -34,9 +36,11 @@ do	--Globals
 	}
 
 	REMOTE_CMDS = {
+		DEVICE_SELECTED = '', -- ON is not called on 'listen'
+		OFF				= '',
 		PVR				= 'screensaver',
-		STAR			= nil,
-		POUND			= nil,
+		STAR			= '',
+		POUND			= '',
 		RECORD			= 'play_pause',
 		UP 				= 'up',
 		DOWN 			= 'down',
@@ -192,6 +196,8 @@ end
 
 function LoadProperties()
 	local properties = {
+		"On Power On",
+		"On Power Off",
 		"Debug Mode",
 		"MENU Button",
 		"GUIDE Button",
@@ -349,6 +355,20 @@ function PYATV.MigrateOldData()
 			C4:UpdateProperty(property,map[value])
 		end
 	end
+
+end
+
+function PYATV.GenerateMediaHash(data)
+
+	local title = data.title or ""
+	local artist = data.artist or ""
+	local album = data.album or ""
+	local time = data.total_time or ""
+
+	local hash = title..artist..album..time
+	local encoded = C4:Base64Encode(hash)
+
+	return encoded
 
 end
 
@@ -694,9 +714,10 @@ function PYATV.GenerateMediaInfo(data)
 	local media = data.media
 
 	local imgUrl = ""
+	local hash = PYATV.GenerateMediaHash(media)
 
 	if (data.media.artwork) then
-		imgUrl = "http://"..Properties["Server Address"].."/artwork/"..PersistData.DeviceID.."/art.png?"..os.time() or ""
+		imgUrl = "http://"..Properties["Server Address"].."/artwork/"..PersistData.DeviceID.."/art.png?"..hash or ""
 	end
 
 	local args = {
@@ -719,24 +740,57 @@ function PYATV.GenerateMediaInfo(data)
 end
 
 function PYATV.GenerateDashboard(idBinding,tParams,data)
-    local possibleItems = {
-        "Play",
-        "Pause",
-        "Stop",
-        "SkipFwd",
-        "SkipRev"
-    }
 
 	dbg("Generate dashboard...")
 
 	local state = data.media.state
+	local total_time = data.media.total_time
+	local features = data.features
 	local items = ""
+
+	local sh = data.media.shuffle=="Off" and "ShuffleOn" or "ShuffleOff"
+	local rp = data.media["repeat"]=="Off" and "RepeatOn" or "RepeatOff"
+
+	--Feature = dashboard
+	local itemTable = {
+		Shuffle = sh,
+		Repeat = rp,
+		Previous = "SkipRev",
+		Next = "SkipFwd",
+		Play = "Play",
+		Pause = "Pause",
+		Stop = "Stop",
+	}
+
+	local possibleItems = {
+		playing = {
+			"Shuffle", "Previous", "Pause", "Next", "Repeat"
+		},
+		live = {
+			"Stop"
+		},
+		idle = {
+			"Shuffle", "Previous", "Play", "Next", "Repeat"
+		}
+	}
+
+	local function parseItems(data)
+		for i,v in orderedPairs(data) do
+			local feature = features.v
+			if (feature=="Available") then
+				items = items..itemTable.v.." "
+			end
+		end
+	end
 	
-	--Eventually more logic for stop button
-	if (state=="Playing") then
-		items = "SkipRev Pause SkipFwd"
+	if (state=="Playing" and total_time) then
+		parseItems(possibleItems.playing)
+	elseif (state=="Playing" and not total_time) then
+		parseItems(possibleItems.live)
+	elseif (state~="Playing" and not total_time) then
+		parseItems(possibleItems.idle)
 	else
-		items = "SkipRev Play SkipFwd"
+		parseItems(possibleItems.idle)
 	end
 
     local dashboardInfo = {
@@ -754,21 +808,36 @@ function PYATV.GenerateQueue(idBinding,tParams,data)
 
 	local title = data.media.title
 	local artist = data.media.artist
+	local total_time = data.media.total_time
 	local imgUrl = ""
+	local hash = PYATV.GenerateMediaHash(data.media)
 
 	if (data.media.artwork) then
-		imgUrl = "http://"..Properties["Server Address"].."/artwork/"..PersistData.DeviceID.."/art.png?"..os.time() or ""
+		imgUrl = "http://"..Properties["Server Address"].."/artwork/"..PersistData.DeviceID.."/art.png?"..hash or ""
 	end
 
 	local appName = data.app.name
 	local appIcon = data.app.icon or ""
 
-	local q = "<List>"
+	local np = [[
+		<NowPlaying>
+			<actions_list>UICreatePreset UIReconnect</actions_list>
+		</NowPlaying>
+	]]
+
+	local q = np.."<List>"
 
 	if (title or artist) then
 		q = q.."<item><title>"..XMLEncode(title or '').."</title>"
 		q = q.."<subtitle>"..XMLEncode(artist or '').."</subtitle>"
-		q = q.."<image_list>"..imgUrl.."</image_list></item>"
+		q = q.."<image_list>"..imgUrl.."</image_list>"
+
+		if (total_time) then
+			local time = ConvertTime(total_time)
+			q = q.."<duration>"..time.."</duration>"
+		end
+
+		q = q.."</item>"
 	end
 	
 	if (appName) then
@@ -782,6 +851,47 @@ function PYATV.GenerateQueue(idBinding,tParams,data)
 	dbg("Final queue data:\n"..q)
 
 	SendEvent(5001, nil, nil, "QueueChanged", q) -- Logic needed for tParams? nil placeholder for now
+end
+
+function PYATV.GenerateProgress(data,source)
+	dbg("Generate progress...")
+
+	local state = data.media.state
+	local pos = data.media.position
+	local total_time = data.media.total_time
+
+	local progress = {
+		offset = pos,
+		length = total_time,
+		--label = "PROGRESS" -- nothing shows in UI
+	}
+
+	if (state=="Playing" and total_time) then
+		if (Timer.progress) then
+			Timer.progress:Cancel()
+		end
+
+		Timer.progress = C4:SetTimer(1000, function(timer)
+			progress.offset = progress.offset+1
+
+			if (progress.offset > progress.length) then
+				dbg("Stop progress, exceeded length: "..dump(progress))
+				timer:Cancel()
+			else
+				dbg("Send progress: "..dump(progress))
+				SendEvent(5001, nil, nil, "ProgressChanged", progress)
+			end
+		end, true)
+	elseif (state~="Playing" and Timer.progress) then
+		dbg("Cancel progress, state: "..state..", timer: "..dump(Timer.progress))
+		Timer.progress:Cancel()
+    elseif (not total_time and Timer.progress) then
+		dbg("Cancel progress, state: "..state..", timer: "..dump(Timer.progress))
+		Timer.progress:Cancel()
+	else
+    	dbg("Nothing progress, state: "..state..", timer: "..dump(Timer.progress))
+		SendEvent(5001, nil, nil, "ProgressChanged", progress)
+	end
 end
 
 function PYATV.GetMedia(source,idBinding,tParams)
@@ -817,6 +927,9 @@ function PYATV.MediaCallback(jsonData,callbackData,source)
 		PYATV.GenerateDashboard(nil,nil,jsonData)
 		PYATV.GenerateQueue(nil,nil,jsonData)
 	end
+
+	--Always send progress
+	PYATV.GenerateProgress(jsonData,source)
 
 	--Send data always just in case
 	PYATV.GenerateMediaInfo(jsonData)
@@ -1006,27 +1119,11 @@ function OPC.Pairing_Code (value)
 end
 
 function OPC.On_Power_Off (value)
-	if (value == 'Do Nothing') then
-		CMDS.OFF = nil
-	elseif (value == 'Home') then
-		CMDS.OFF = 'top_menu'
-	elseif (value == 'Back') then
-		CMDS.OFF = 'cancel'
-	elseif (value == 'Menu') then
-		CMDS.OFF = 'menu'
-	end
+	PYATV.SetRemoteMapping("OFF",value)
 end
 
 function OPC.On_Power_On (value)
-	if (value == 'Do Nothing') then
-		CMDS.ON = nil
-	elseif (value == 'Home') then
-		CMDS.ON = 'top_menu'
-	elseif (value == 'Back') then
-		CMDS.ON = 'cancel'
-	elseif (value == 'Menu') then
-		CMDS.ON = 'menu'
-	end
+	PYATV.SetRemoteMapping("DEVICE_SELECTED",value)
 end
 
 --RECEIVED FROM PROXY
@@ -1153,13 +1250,20 @@ end
 
 --MSP REMOTE
 
-function MSP.ON (idBinding, strCommand, tParams, args)
-	--need logic for Properties
+function MSP.ShuffleOn(idBinding, strCommand, tParams, args)
+	PYATV.RemoteCommand("set_shuffle","Songs")
 end
 
-function MSP.OFF (idBinding, strCommand, tParams, args)
-	--need logic for Properties
-	C4:SetVariable("Service", "OFF")
+function MSP.ShuffleOff(idBinding, strCommand, tParams, args)
+	PYATV.RemoteCommand("set_shuffle","Off")
+end
+
+function MSP.RepeatOn(idBinding, strCommand, tParams, args)
+	PYATV.RemoteCommand("set_repeat","All")
+end
+
+function MSP.RepeatOff(idBinding, strCommand, tParams, args)
+	PYATV.RemoteCommand("set_repeat","Off")
 end
 
 --NAVIGATOR UI
