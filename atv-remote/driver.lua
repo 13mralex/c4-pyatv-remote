@@ -1613,6 +1613,10 @@ end
 function MSP.UIStorePreset(idBinding, strCommand, tParams, args)
     dbg("STORE PRESET")
 
+	if (PersistData.presets == nil) then
+		PersistData.presets = {}
+	end
+
 	local preset = {
 		UIPresetName = PRESETS.Create.UIPresetName,
 		UIPresetLaunchURL = PRESETS.Create.UIPresetLaunchURL,
