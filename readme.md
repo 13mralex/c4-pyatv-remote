@@ -18,7 +18,7 @@
 	- Fully customizable name, URL, and icon
 	- Created presets are expected to be added as favorites or executed via Programming
 	- To create a preset:
-	  	1. *TESTING:* For quicker testing, URLs can be launched in the Lua console in Composer with the following command: `PYATV.LaunchApp("URL here")`
+		1. *TESTING:* For quicker testing, URLs can be launched in the Lua console in Composer with the following command: `PYATV.LaunchApp("URL here")`
 		2. Gather necessary info (name, launch URL, icon URL)
 		3. Launch the Apple TV from C4 (watch or listen)
 			1. Navigate to the Presets tab
