@@ -232,8 +232,14 @@ class ATV:
                 self.ws_clients.remove(_ws)
                 return
         
-    async def on_get_remote(self,req,resp):
-        resp.media = {"status":"OK"}
+    async def on_get_features(self,req,resp,id):
+        atv = self.get_atv(id)
+
+        if atv:
+            features = self.get_features(atv)
+            resp.media = features
+        else:
+            resp.media = {"status":"failed"}
 
     async def on_post_remote(self,req,resp):
         data = await req.media
@@ -246,10 +252,22 @@ class ATV:
             atv = self.get_atv(id)
 
             if atv:
-                cmd = getattr(atv.remote_control, command)
+                cmd = None
+                
+                if command=="turn_on" or command=="turn_off":
+                    cmd = getattr(atv.power, command)
+                else:
+                    cmd = getattr(atv.remote_control, command)
 
                 if action:
-                    act = getattr(pyatv.const.InputAction,action)
+                    act = None
+                    if command=="set_shuffle":
+                        act = getattr(pyatv.const.ShuffleState,action)
+                    elif command=="set_repeat":
+                        act = getattr(pyatv.const.RepeatState,action)
+                    else:
+                        act = getattr(pyatv.const.InputAction,action)
+                    
                     await cmd(act)
                 else:
                     await cmd()
@@ -258,6 +276,7 @@ class ATV:
             else:
                 resp.media = self.failed
         except Exception as e:
+            logging.exception(f"Remote command failed: {str(e)}")
             resp.media = {"status":f"Failed: {str(e)}"}
 
     async def on_post_keyboard(self,req,resp):
@@ -358,6 +377,21 @@ class ATV:
             logging.exception("App failed to launch")
             resp.media = {"status":"App failed to launch"}
 
+    async def on_post_stream(self,req,resp):
+        data = await req.media
+        id = data["id"]
+        url = data["url"]
+        atv = self.get_atv(id)
+
+        logging.info(f"Launch stream: {url}")
+
+        try:
+            await atv.stream.play_url(url)
+            resp.media = {"status":"Stream successfully started!"}
+        except Exception as e:
+            logging.exception("Stream failed to start")
+            resp.media = {"status":"Stream failed to start"}
+
     async def on_get_info(self,req,resp,id):
         atv = self.get_atv(id)
         if atv:
@@ -433,14 +467,28 @@ class ATV:
         }
         app = self.get_app(atv.metadata.app)
 
+        features = self.get_features(atv)
+
         state = {
             "media": media,
-            "app": app
+            "app": app,
+            "features": features,
         }
 
         #logging.info(f"ATV State:\n{json.dumps(state,indent=2)}")
 
         return state
+
+    def get_features(self,atv):
+        feature_list = {}
+        features = atv.features.all_features()
+        
+        for feature,info in features.items():
+            name = feature.name
+            state = info.state.name
+            feature_list[name] = state
+
+        return feature_list
 
     def get_atv(self,id) -> pyatv.interface.AppleTV:
         listener = self.atv_list.get(id)
@@ -533,17 +581,19 @@ app.add_route("/scan",pyatv_app,suffix="scan")
 app.add_route("/pair",pyatv_app,suffix="pair")
 app.add_route("/connect",pyatv_app,suffix="connect")
 app.add_route("/disconnect/{id}",pyatv_atv,suffix="disconnect")
+app.add_route("/features/{id}",pyatv_atv,suffix="features")
 app.add_route("/remote",pyatv_atv,suffix="remote")
 app.add_route("/keyboard",pyatv_atv,suffix="keyboard")
 app.add_route("/artwork/{id}/art.png",pyatv_atv,suffix="artwork")
 app.add_route("/users/{id}",pyatv_atv,suffix="users")
 app.add_route("/apps/{id}",pyatv_atv,suffix="apps")
 app.add_route("/app_launch",pyatv_atv,suffix="app_launch") # Migrate to /apps?
+app.add_route("/stream",pyatv_atv,suffix="stream")
 app.add_route("/info/{id}",pyatv_atv,suffix="info")
 app.add_route("/ws/{id}",pyatv_atv,suffix="ws")
 
 async def main():
-    config = uvicorn.Config("pyatv-webserver:app",host="0.0.0.0", port=8080, log_level="info")
+    config = uvicorn.Config("pyatv-webserver:app",host="0.0.0.0", port=8081, log_level="info")
     server = uvicorn.Server(config)
     await server.serve()
 
