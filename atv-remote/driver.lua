@@ -1366,7 +1366,7 @@ function MSP.UIScanDevicesCallback(idBinding,tParams,devices)
 		Id = "UIScanComplete",
 		Title = "Scan complete!"
 	}
-	SendEvent(MSP_PROXY,nil,"DriverNotification",data)
+	SendEvent(MSP_PROXY,nil,nil,"DriverNotification",data)
     
 end
 
