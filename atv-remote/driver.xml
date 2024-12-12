@@ -6,7 +6,7 @@
   <model>TV</model>
   <created>09/15/2021 12:00 AM</created>
   <modified>12/11/2024 8:00 PM</modified>
-  <version>57</version>
+  <version>58</version>
   <control>lua_gen</control>
   <driver>DriverWorks</driver>
   <small image_source="c4z">icons/device_sm.png</small>
@@ -761,6 +761,19 @@
           <Item>
             <Label>Icon URL</Label>
             <TextField propertyName="UIPresetIconURL" />
+          </Item>
+          <Item>
+            <Label>Media Type</Label>
+            <ComboBox propertyName="UIPresetMediaType">
+              <Item>
+                <Id>audio</Id>
+                <Value>Audio</Value>
+              </Item>
+              <Item>
+                <Id>video</Id>
+                <Value>Video</Value>
+              </Item>
+            </ComboBox>
           </Item>
           <Item>
             <HeaderTxt>BUTTON ACTION</HeaderTxt>

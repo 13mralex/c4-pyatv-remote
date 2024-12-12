@@ -582,6 +582,10 @@ function PYATV.RemoteCommand(cmd,action)
 	dbg ("---Remote Command---")
 	dbg ("CMD: "..cmd)
 
+	if (cmd=='' or cmd==nil) then
+		return
+	end
+
 	--top menu does not accept action parameter
 	if ((cmd=="top_menu" or cmd=="home_hold") and action=="Hold") then
 		cmd = "home_hold"
@@ -1496,6 +1500,7 @@ function MSP.GetNewPreset(idBinding, strCommand, tParams, args)
 	p = p.."<UIPresetName>"..PRESETS.Create.UIPresetName.."</UIPresetName>"
 	p = p.."<UIPresetLaunchURL>"..XMLEncode(PRESETS.Create.UIPresetLaunchURL).."</UIPresetLaunchURL>"
 	p = p.."<UIPresetIconURL>"..XMLEncode(PRESETS.Create.UIPresetIconURL).."</UIPresetIconURL>"
+	p = p.."<UIPresetMediaType>"..PRESETS.Create.UIPresetMediaType.."</UIPresetMediaType>"
 	p = p.."<UIPresetButtonEnabled>"..PRESETS.Create.UIPresetButtonEnabled.."</UIPresetButtonEnabled>"
 	p = p.."<UIPresetButtonTime>"..PRESETS.Create.UIPresetButtonTime.."</UIPresetButtonTime>"
 
@@ -1509,6 +1514,7 @@ function MSP.UICreatePreset(idBinding, strCommand, tParams, args)
 		UIPresetName = "",
 		UIPresetLaunchURL = "",
 		UIPresetIconURL = "",
+		UIPresetMediaType = "audio",
 		UIPresetButtonEnabled = "off",
 		UIPresetButtonTime = 3
 	}
@@ -1545,6 +1551,7 @@ function MSP.UIStorePreset(idBinding, strCommand, tParams, args)
 		UIPresetName = PRESETS.Create.UIPresetName,
 		UIPresetLaunchURL = PRESETS.Create.UIPresetLaunchURL,
 		UIPresetIconURL = PRESETS.Create.UIPresetIconURL,
+		UIPresetMediaType = PRESETS.Create.UIPresetMediaType,
 		UIPresetButtonEnabled = PRESETS.Create.UIPresetButtonEnabled,
 		UIPresetButtonTime = PRESETS.Create.UIPresetButtonTime
 	}
@@ -1561,6 +1568,7 @@ function MSP.UIStorePreset(idBinding, strCommand, tParams, args)
 		UIPresetName = "",
 		UIPresetLaunchURL = "",
 		UIPresetIconURL = "",
+		UIPresetMediaType = "audio",
 		UIPresetButtonEnabled = "off",
 		UIPresetButtonTime = 3
 	}
@@ -1606,6 +1614,14 @@ function MSP.jumpToFavorite(idBinding, strCommand, tParams, args)
 			PYATV.RemoteCommand(button)
 		end, false)
 	end
+
+	local mediaType = preset.UIPresetMediaType
+	if (mediaType=="audio") then
+		C4:SendToDevice (tParams.ROOMID, 'SELECT_AUDIO_DEVICE', {deviceid = C4:GetProxyDevices()})
+	elseif (mediaType=="video") then
+		C4:SendToDevice (tParams.ROOMID, 'SELECT_VIDEO_DEVICE', {deviceid = C4:GetProxyDevices()})
+	end
+
 end
 
 function MSP.SettingChanged(idBinding, strCommand, tParams, args)
