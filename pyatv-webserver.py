@@ -103,9 +103,10 @@ class PYATV:
         id = data["id"]
         protocol = data["protocol"]
         pin = data.get("pin")
+        name = data.get("name") or "pyatv"
         
         if not pin:
-            resp.media = await self.send_pair_request(id,protocol)
+            resp.media = await self.send_pair_request(id,protocol,name)
         else:
             resp.media = await self.send_pair_pin(pin)
 
@@ -147,14 +148,14 @@ class PYATV:
             logging.exception("Pairing failed")
             return {"status":f"Pairing failed: {str(e)}"}
 
-    async def send_pair_request(self,id,protocol):
+    async def send_pair_request(self,id,protocol,name):
 
         atv = await self.get_device_by_id(id)
         proto = self.protocols[protocol]
 
         if atv:
             logging.info(f"Begin pairing {atv.name} with {proto.name}")
-            self.pairing = await pyatv.pair(atv,proto,self.loop)
+            self.pairing = await pyatv.pair(atv,proto,self.loop,name=name)
             await self.pairing.begin()
             return {"status": "Waiting for code..."}
         else:

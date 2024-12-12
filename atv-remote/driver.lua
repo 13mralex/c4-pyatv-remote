@@ -439,6 +439,7 @@ function PYATV.BeginPairing(deviceName)
 
 	C4:UpdatePropertyList("Protocol to Pair", protocols)
 	PYATV.UpdateStatus("Please select a protocol...")
+	return protocolList
 end
 
 function PYATV.PairProtocol(protocol)
@@ -451,6 +452,7 @@ function PYATV.PairProtocol(protocol)
 	
 	local deviceId = PairingDevice["identifier"]
 	local data = {
+		name = "Control4 - "..protocol,
 		id = deviceId,
 		protocol = protocol
 	}
@@ -1336,9 +1338,12 @@ function MSP.TabsCommand(idBinding, strCommand, tParams, args)
 end
 
 function MSP.UIScanDevices(idBinding, strCommand, tParams, args)
-    
     PYATV.ScanDevices(idBinding,tParams,MSP.UIScanDevicesCallback)
+end
 
+function MSP.UIScanComplete(idBinding, strCommand, tParams, args)
+	local screen = "<NextScreen>UIDevicesScreen</NextScreen>"
+    DataReceived(idBinding, tParams["NAVID"], tParams["SEQ"], screen)
 end
 
 function MSP.UIScanDevicesCallback(idBinding,tParams,devices)
@@ -1348,7 +1353,7 @@ function MSP.UIScanDevicesCallback(idBinding,tParams,devices)
     for k,v in pairs(devices) do
 	   local name = v["name"] or "No name"
 	   local id = v["identifier"] or "No ID"
-	   devicesXml = devicesXml.."<item><title>"..name.."</title><subtitle>"..id.."</subtitle><id>"..id.."</id></item>"
+	   devicesXml = devicesXml.."<item><title>"..name.."</title><subtitle>"..id.."</subtitle><id>"..id.."</id><default_action>UIPairDevice</default_action></item>"
     end
     
     devicesXml = devicesXml.."</List>"
@@ -1356,6 +1361,12 @@ function MSP.UIScanDevicesCallback(idBinding,tParams,devices)
     dbg("Got data from callback: "..devicesXml)
     
     MSP.UIScanDevicesXML = devicesXml
+
+	local data = {
+		Id = "UIScanComplete",
+		Title = "Scan complete!"
+	}
+	SendEvent(MSP_PROXY,nil,"DriverNotification",data)
     
 end
 
@@ -1382,6 +1393,61 @@ function MSP.UIDevicesScreen(idBinding, strCommand, tParams, args)
     
     DataReceived(idBinding, tParams["NAVID"], tParams["SEQ"], data)
 
+end
+
+function MSP.UIDeviceSelection(idBinding, strCommand, tParams, args)
+	C4:UpdateProperty("Device Selector", args.title)
+	MSP.UIDeviceProtocols = PYATV.BeginPairing(args.title)
+	local screen = "<NextScreen>UIProtocolsScreen</NextScreen>"
+    DataReceived(idBinding, tParams["NAVID"], tParams["SEQ"], screen)
+end
+
+function MSP.UIProtocolsScreen(idBinding, strCommand, tParams, args)
+
+	local d = "<List>"
+
+	for k,protocol in orderedPairs(MSP.UIDeviceProtocols) do
+		if (protocol.enabled) then
+			d = d.."<item><title>"..protocol.name.."</title><subtitle>Click to pair</subtitle><default_action>UIProtocolSelection</default_action></item>"
+		end
+	end
+	d = d.."<item><title>Post-Pairing</title><isHeader>true</isHeader></item>"
+	d = d.."<item><title>Connect</title><action>UIPostDevicePair</action></item>"
+	d = d.."</List>"
+
+	DataReceived(idBinding, tParams["NAVID"], tParams["SEQ"], d)
+
+end
+
+function MSP.UIProtocolSelection(idBinding, strCommand, tParams, args)
+	C4:UpdateProperty("Protocol to Pair", args.title)
+	PYATV.PairProtocol(args.title)
+	local screen = "<NextScreen>UIProtocolPinScreen</NextScreen>"
+    DataReceived(idBinding, tParams["NAVID"], tParams["SEQ"], screen)
+end
+
+function MSP.UIProtocolPinScreen(idBinding, strCommand, tParams, args)
+	local data = [[
+		<List>
+			<item>
+				<title>Enter PIN</title>
+				<subtitle>Click to enter PIN</subtitle>
+			</item>
+		</List>
+	]]
+	DataReceived(idBinding, tParams["NAVID"], tParams["SEQ"], data)
+end
+
+function MSP.UIProtocolPinPrompt(idBinding, strCommand, tParams, args)
+	PYATV.PairWithPIN(args.pin)
+	local screen = "<RemoveScreen>true</RemoveScreen>"
+    DataReceived(idBinding, tParams["NAVID"], tParams["SEQ"], screen)
+end
+
+function MSP.UIPostDevicePair(idBinding, strCommand, tParams, args)
+	PYATV.Connect()
+	local screen = "<NextScreen>#nowplaying</NextScreen>"
+    DataReceived(idBinding, tParams["NAVID"], tParams["SEQ"], screen)
 end
 
 function MSP.UIReconnect(idBinding, strCommand, tParams, args)

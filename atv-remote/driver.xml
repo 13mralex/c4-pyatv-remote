@@ -6,7 +6,7 @@
   <model>TV</model>
   <created>09/15/2021 12:00 AM</created>
   <modified>12/11/2024 8:00 PM</modified>
-  <version>58</version>
+  <version>59</version>
   <control>lua_gen</control>
   <driver>DriverWorks</driver>
   <small image_source="c4z">icons/device_sm.png</small>
@@ -740,6 +740,122 @@
             </WillTranslate>
           </List>
         </Screen>
+        <Screen xsi:type="ListScreenType">
+          <Id>UIProtocolsScreen</Id>
+          <DataCommand>
+            <Name>UIProtocolsScreen</Name>
+            <Type>PROTOCOL</Type>
+            <Params>
+              <Param>
+                <Name>screenId</Name>
+                <Type>SYSTEM</Type>
+                <Value>screenId</Value>
+              </Param>
+              <Param>
+                <Name>id</Name>
+                <Type>FIRST_SELECTED</Type>
+                <Value>id</Value>
+              </Param>
+              <Param>
+                <Name>title</Name>
+                <Type>FIRST_SELECTED</Type>
+                <Value>title</Value>
+              </Param>
+              <Param>
+                <Name>protocol</Name>
+                <Type>FIRST_SELECTED</Type>
+                <Value>protocol</Value>
+              </Param>
+            </Params>
+          </DataCommand>
+          <RequiresRefresh>true</RequiresRefresh>
+          <PaginationStyle>NONE</PaginationStyle>
+          <List>
+            <DefaultAction>UIProtocolSelection</DefaultAction>
+            <ItemDefaultActionProperty>action</ItemDefaultActionProperty>
+            <ItemActionIdsProperty>actions_list</ItemActionIdsProperty>
+            <TitleProperty>title</TitleProperty>
+            <SubTitleProperty>subtitle</SubTitleProperty>
+            <ImageProperty>image_list</ImageProperty>
+            <LengthProperty>duration</LengthProperty>
+            <IsLink>
+              <Property>isLink</Property>
+              <ValidValues>
+                <Value>true</Value>
+              </ValidValues>
+            </IsLink>
+            <IsHeader>
+              <Property>isHeader</Property>
+              <ValidValues>
+                <Value>true</Value>
+              </ValidValues>
+            </IsHeader>
+            <WillTranslate>
+              <Property>translate</Property>
+              <ValidValues>
+                <Value>true</Value>
+              </ValidValues>
+            </WillTranslate>
+          </List>
+        </Screen>
+        <Screen xsi:type="ListScreenType">
+          <Id>UIProtocolPinScreen</Id>
+          <DataCommand>
+            <Name>UIProtocolPinScreen</Name>
+            <Type>PROTOCOL</Type>
+            <Params>
+              <Param>
+                <Name>screenId</Name>
+                <Type>SYSTEM</Type>
+                <Value>screenId</Value>
+              </Param>
+              <Param>
+                <Name>id</Name>
+                <Type>FIRST_SELECTED</Type>
+                <Value>id</Value>
+              </Param>
+              <Param>
+                <Name>title</Name>
+                <Type>FIRST_SELECTED</Type>
+                <Value>title</Value>
+              </Param>
+              <Param>
+                <Name>protocol</Name>
+                <Type>FIRST_SELECTED</Type>
+                <Value>protocol</Value>
+              </Param>
+            </Params>
+          </DataCommand>
+          <RequiresRefresh>true</RequiresRefresh>
+          <PaginationStyle>NONE</PaginationStyle>
+          <List>
+            <DefaultAction>UIProtocolPinPrompt</DefaultAction>
+            <ItemDefaultActionProperty>action</ItemDefaultActionProperty>
+            <ItemActionIdsProperty>actions_list</ItemActionIdsProperty>
+            <TitleProperty>title</TitleProperty>
+            <SubTitleProperty>subtitle</SubTitleProperty>
+            <ImageProperty>image_list</ImageProperty>
+            <LengthProperty>duration</LengthProperty>
+            <IsLink>
+              <Property>isLink</Property>
+              <ValidValues>
+                <Value>true</Value>
+              </ValidValues>
+            </IsLink>
+            <IsHeader>
+              <Property>isHeader</Property>
+              <ValidValues>
+                <Value>true</Value>
+              </ValidValues>
+            </IsHeader>
+            <WillTranslate>
+              <Property>translate</Property>
+              <ValidValues>
+                <Value>true</Value>
+              </ValidValues>
+            </WillTranslate>
+          </List>
+        </Screen>
         <Screen xsi:type="SettingsScreenType">
           <Id>CreatePresetScreen</Id>
           <DataCommand>
@@ -1012,10 +1128,139 @@
           </Command>
         </Action>
         <Action>
+          <Id>UIProtocolPinPrompt</Id>
+          <Name>Select Protocol</Name>
+          <EditProperty helpText="Enter PIN displayed on screen">pin</EditProperty>
+          <Command>
+            <Name>UIProtocolPinPrompt</Name>
+            <Type>PROTOCOL</Type>
+            <Params>
+              <Param>
+                <Name>screenId</Name>
+                <Type>SYSTEM</Type>
+                <Value>screenId</Value>
+              </Param>
+              <Param>
+                <Name>tabId</Name>
+                <Type>SYSTEM</Type>
+                <Value>tabId</Value>
+              </Param>
+              <Param>
+                <Name>screenDepth</Name>
+                <Type>SYSTEM</Type>
+                <Value>screenDepth</Value>
+              </Param>
+              <Param>
+                <Name>id</Name>
+                <Type>FIRST_SELECTED</Type>
+                <Value>id</Value>
+              </Param>
+              <Param>
+                <Name>title</Name>
+                <Type>FIRST_SELECTED</Type>
+                <Value>title</Value>
+              </Param>
+              <Param>
+                <Name>pin</Name>
+                <Type>FIRST_SELECTED</Type>
+                <Value>pin</Value>
+              </Param>
+            </Params>
+          </Command>
+        </Action>
+        <Action>
+          <Id>UIProtocolSelection</Id>
+          <Name>Select Protocol</Name>
+          <Command>
+            <Name>UIProtocolSelection</Name>
+            <Type>PROTOCOL</Type>
+            <Params>
+              <Param>
+                <Name>screenId</Name>
+                <Type>SYSTEM</Type>
+                <Value>screenId</Value>
+              </Param>
+              <Param>
+                <Name>tabId</Name>
+                <Type>SYSTEM</Type>
+                <Value>tabId</Value>
+              </Param>
+              <Param>
+                <Name>screenDepth</Name>
+                <Type>SYSTEM</Type>
+                <Value>screenDepth</Value>
+              </Param>
+              <Param>
+                <Name>id</Name>
+                <Type>FIRST_SELECTED</Type>
+                <Value>id</Value>
+              </Param>
+              <Param>
+                <Name>title</Name>
+                <Type>FIRST_SELECTED</Type>
+                <Value>title</Value>
+              </Param>
+            </Params>
+          </Command>
+        </Action>
+        <Action>
           <Id>UIShowDevices</Id>
           <Name>Show Devices</Name>
           <Command>
             <Name>UIShowDevices</Name>
+            <Type>PROTOCOL</Type>
+          </Command>
+        </Action>
+        <Action>
+          <Id>UIDeviceBeginPairing</Id>
+          <Name>Pair Device</Name>
+          <Command>
+            <Name>UIDeviceBeginPairing</Name>
+            <Type>PROTOCOL</Type>
+            <Params>
+              <Param>
+                <Name>screenId</Name>
+                <Type>SYSTEM</Type>
+                <Value>screenId</Value>
+              </Param>
+              <Param>
+                <Name>id</Name>
+                <Type>FIRST_SELECTED</Type>
+                <Value>id</Value>
+              </Param>
+            </Params>
+          </Command>
+        </Action>
+        <Action>
+          <Id>UIDevicePairProtocol</Id>
+          <Name>Pair Device</Name>
+          <Command>
+            <Name>UIDevicePairProtocol</Name>
+            <Type>PROTOCOL</Type>
+            <Params>
+              <Param>
+                <Name>screenId</Name>
+                <Type>SYSTEM</Type>
+                <Value>screenId</Value>
+              </Param>
+              <Param>
+                <Name>id</Name>
+                <Type>FIRST_SELECTED</Type>
+                <Value>id</Value>
+              </Param>
+              <Param>
+                <Name>protocol</Name>
+                <Type>FIRST_SELECTED</Type>
+                <Value>protocol</Value>
+              </Param>
+            </Params>
+          </Command>
+        </Action>
+        <Action>
+          <Id>UIPostDevicePair</Id>
+          <Name>Connect After Pairing</Name>
+          <Command>
+            <Name>UIPostDevicePair</Name>
             <Type>PROTOCOL</Type>
           </Command>
         </Action>
@@ -1182,6 +1427,27 @@
           <GeneratesRoomFavorite>true</GeneratesRoomFavorite>
           </Action>
       </Actions>
+      <DriverNotifications>
+        <Notification>
+          <Id>UIScanComplete</Id>
+          <CancelButton>
+            <Name>OK</Name>
+            <Command>
+              <Name>UIScanComplete</Name>
+              <Type>PROTOCOL</Type>
+            </Command>
+          </CancelButton>
+          <Buttons>
+            <Button>
+              <Name>Show devices</Name>
+              <Command>
+                <Name>UIScanComplete</Name>
+                <Type>PROTOCOL</Type>
+              </Command>
+            </Button>
+          </Buttons>
+        </Notification>
+      </DriverNotifications>
       <Dashboard>
         <!-- These are the five available elements that can be displayed on a Navigator transport bar -->
         <!-- Unless this driver targets Control4 Digital Audio, the Type of these should always be PROTOCOL -->
