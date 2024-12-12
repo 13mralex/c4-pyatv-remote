@@ -776,9 +776,9 @@ function PYATV.GenerateDashboard(idBinding,tParams,data)
 
 	local function parseItems(data)
 		for i,v in orderedPairs(data) do
-			local feature = features.v
+			local feature = features[v]
 			if (feature=="Available") then
-				items = items..itemTable.v.." "
+				items = items..itemTable[v].." "
 			end
 		end
 	end
