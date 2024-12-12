@@ -1,3 +1,4 @@
+
 # Apple TV IP Remote Control (pyatv)
 
 <img height="500px" src="https://github.com/user-attachments/assets/95f7eaf0-67f0-4f34-b547-85940f5d7672"/>
@@ -56,14 +57,26 @@
 	- `python3 pyatv-webserver.py`
 - Server is now running on port 8080
 ## Pairing Apple TV
-- Run the **Scan Devices** action from Composer
-- The Latest Status property will state when scan is complete
-- The Device Selector property will populate with available devices
-- Select the desired device, the Protocols property will populate
-- Select Companion or AirPlay **(you will need to pair with both protocols)**
-- After setting the protocol, the device will display a PIN on screen
-- Enter the PIN in Composer (perform the pairing again with the other protocol)
-- Run the **Refresh Connection** action to start connection to the server
+- **From Composer**
+    - Run the **Scan Devices** action
+    - The Latest Status property will state when scan is complete
+    - The Device Selector property will populate with available devices
+    - Select the desired device, the Protocols property will populate
+    - Select Companion or AirPlay **(you will need to pair with both protocols)**
+    - After setting the protocol, the device will display a PIN on screen
+    - Enter the PIN in Composer (perform the pairing again with the other protocol)
+    - Run the **Refresh Connection** action to start connection to the server
+ - **From C4 UI**
+    - Launch Apple TV from Watch or Listen
+    - Browse to the Settings tab
+    - Press **Scan Devices**
+    - Wait ~5 seconds, a notification should appear prompting to show the device list
+	    - If nothing appears, press **Show Devices**
+	- Select the desired device, the protocol list should appear
+	- Select Companion or AirPlay **(you will need to pair with both protocols)**
+	- Enter the PIN as prompted, then pair the other protocol
+	- Press **Connect** after pairing both protocols
+    
 
 ## ToDos
 - Nothing currently, open to suggestions :)
