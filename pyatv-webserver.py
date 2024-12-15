@@ -278,7 +278,7 @@ class ATV:
                 resp.media = self.failed
         except Exception as e:
             logging.exception(f"Remote command failed: {str(e)}")
-            resp.media = {"status":f"Failed: {str(e)}"}
+            resp.media = {"status":f"Failed: {str(e)}","connected":False}
 
     async def on_post_keyboard(self,req,resp):
         data = await req.media

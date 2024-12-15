@@ -243,12 +243,10 @@ function PYATV.UrlCall(uri, callback, method, data, callbackData)
 						local jsonData = JSON:decode(strData)
 						if (jsonData["status"]) then
 							PYATV.UpdateStatus(jsonData["status"])
-						elseif (jsonData["connected"]~=nil) then
-							if (not jsonData["connected"]) then
-								PYATV.ReconnectDevice()
-							end
 						end
-						if (callback) then
+						if (jsonData["connected"]==false) then
+							PYATV.ReconnectDevice(true)
+						elseif (callback) then
 							callback(jsonData,callbackData)
 						end
 					end
@@ -280,12 +278,10 @@ function PYATV.UrlCall(uri, callback, method, data, callbackData)
 						local jsonData = JSON:decode(strData)
 						if (jsonData["status"]) then
 							PYATV.UpdateStatus(jsonData["status"])
-						elseif (jsonData["connected"]~=nil) then
-							if (not jsonData["connected"]) then
-								PYATV.ReconnectDevice()
-							end
 						end
-						if (callback) then
+						if (jsonData["connected"]==false) then
+							PYATV.ReconnectDevice(true)
+						elseif (callback) then
 							callback(jsonData,callbackData)
 						end
 					end
@@ -370,6 +366,18 @@ function PYATV.GenerateMediaHash(data)
 
 	return encoded
 
+end
+
+function PYATV.GenerateArtUrl(data,encode)
+	local imgUrl = nil
+	if (data.media.artwork) then
+		local hash = PYATV.GenerateMediaHash(data.media)
+		imgUrl = "http://"..Properties["Server Address"].."/artwork/"..PersistData.DeviceID.."/art.png?"..hash
+		if (encode and imgUrl) then
+			imgUrl = C4:Base64Encode(imgUrl)
+		end
+	end
+	return imgUrl
 end
 
 --PAIRING
@@ -512,12 +520,16 @@ function PYATV.ConnectDevice()
 	PYATV.GetUserList()
 end
 
-function PYATV.ReconnectDevice()
-	dbg("Attempting to reconnect device in 10 seconds...")
-	Timer.Device = C4:SetTimer(10000, function(timer)
+function PYATV.ReconnectDevice(force)
+	if (force) then
 		PYATV.ConnectDevice()
-		timer:Cancel()
-	end, true)
+	else
+		dbg("Attempting to reconnect device in 10 seconds...")
+		Timer.Device = C4:SetTimer(10000, function(timer)
+			PYATV.ConnectDevice()
+			timer:Cancel()
+		end, true)
+	end
 end
 
 function PYATV.Connect()
@@ -719,19 +731,14 @@ function PYATV.GenerateMediaInfo(data)
 
 	local media = data.media
 
-	local imgUrl = ""
-	local hash = PYATV.GenerateMediaHash(media)
-
-	if (data.media.artwork) then
-		imgUrl = "http://"..Properties["Server Address"].."/artwork/"..PersistData.DeviceID.."/art.png?"..hash or ""
-	end
+	local imgUrl = PYATV.GenerateArtUrl(data,true)
 
 	local args = {
         TITLE = media.title or data.app.name,
         ALBUM = media.album,
         ARTIST = media.artist,
         GENRE = media.genre,
-        IMAGEURL = C4:Base64Encode(imgUrl)
+        IMAGEURL = imgUrl
     }
     
     C4:SendToProxy(5001, "UPDATE_MEDIA_INFO", args, "COMMAND", true)
@@ -815,15 +822,10 @@ function PYATV.GenerateQueue(idBinding,tParams,data)
 	local title = data.media.title
 	local artist = data.media.artist
 	local total_time = data.media.total_time
-	local imgUrl = ""
-	local hash = PYATV.GenerateMediaHash(data.media)
-
-	if (data.media.artwork) then
-		imgUrl = "http://"..Properties["Server Address"].."/artwork/"..PersistData.DeviceID.."/art.png?"..hash or ""
-	end
+	local imgUrl = PYATV.GenerateArtUrl(data)
 
 	local appName = data.app.name
-	local appIcon = data.app.icon or ""
+	local appIcon = data.app.icon
 
 	local np = [[
 		<NowPlaying>
@@ -836,7 +838,10 @@ function PYATV.GenerateQueue(idBinding,tParams,data)
 	if (title or artist) then
 		q = q.."<item><title>"..XMLEncode(title or '').."</title>"
 		q = q.."<subtitle>"..XMLEncode(artist or '').."</subtitle>"
-		q = q.."<image_list>"..imgUrl.."</image_list>"
+		
+		if (imgUrl) then
+			q = q.."<image_list>"..imgUrl.."</image_list>"
+		end
 
 		if (total_time) then
 			local time = ConvertTime(total_time)
@@ -847,9 +852,23 @@ function PYATV.GenerateQueue(idBinding,tParams,data)
 	end
 	
 	if (appName) then
+
 		q = q.."<item><title>Service</title><isHeader>true</isHeader></item>"
 		q = q.."<item><title>"..XMLEncode(appName).."</title>"
-		q = q.."<image_list>"..appIcon.."</image_list></item>"
+
+		if (data.app.id=="com.apple.TVAirPlay") then
+			appIcon = "controller://driver/atv-remote/icons/airplay.png"
+
+			if (appName~="AirPlay") then
+				q = q.."<subtitle>AirPlay</subtitle>"
+			end
+		end
+		
+		if (appIcon) then
+			q = q.."<image_list>"..appIcon.."</image_list>"
+		end
+
+		q = q.."</item>"
 	end
 
 	q = q.."</List>"
