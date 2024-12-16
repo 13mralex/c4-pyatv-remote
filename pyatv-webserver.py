@@ -306,6 +306,7 @@ class ATV:
     async def on_get_artwork(self,req,resp,id):
         atv = self.get_atv(id)
         art = await atv.metadata.artwork()
+        resp.content_type = art.mimetype
         resp.data = art.bytes
 
     async def on_get_apps(self,req,resp,id):
@@ -585,7 +586,7 @@ app.add_route("/disconnect/{id}",pyatv_atv,suffix="disconnect")
 app.add_route("/features/{id}",pyatv_atv,suffix="features")
 app.add_route("/remote",pyatv_atv,suffix="remote")
 app.add_route("/keyboard",pyatv_atv,suffix="keyboard")
-app.add_route("/artwork/{id}/art.png",pyatv_atv,suffix="artwork")
+app.add_route("/artwork/{id}/art",pyatv_atv,suffix="artwork")
 app.add_route("/users/{id}",pyatv_atv,suffix="users")
 app.add_route("/apps/{id}",pyatv_atv,suffix="apps")
 app.add_route("/app_launch",pyatv_atv,suffix="app_launch") # Migrate to /apps?

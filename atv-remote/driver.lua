@@ -246,7 +246,8 @@ function PYATV.UrlCall(uri, callback, method, data, callbackData)
 						end
 						if (jsonData["connected"]==false) then
 							PYATV.ReconnectDevice(true)
-						elseif (callback) then
+						end
+						if (callback) then
 							callback(jsonData,callbackData)
 						end
 					end
@@ -281,7 +282,8 @@ function PYATV.UrlCall(uri, callback, method, data, callbackData)
 						end
 						if (jsonData["connected"]==false) then
 							PYATV.ReconnectDevice(true)
-						elseif (callback) then
+						end
+						if (callback) then
 							callback(jsonData,callbackData)
 						end
 					end
@@ -372,7 +374,7 @@ function PYATV.GenerateArtUrl(data,encode)
 	local imgUrl = nil
 	if (data.media.artwork) then
 		local hash = PYATV.GenerateMediaHash(data.media)
-		imgUrl = "http://"..Properties["Server Address"].."/artwork/"..PersistData.DeviceID.."/art.png?"..hash
+		imgUrl = "http://"..Properties["Server Address"].."/artwork/"..PersistData.DeviceID.."/art?"..hash
 		if (encode and imgUrl) then
 			imgUrl = C4:Base64Encode(imgUrl)
 		end
