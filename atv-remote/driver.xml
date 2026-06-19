@@ -230,6 +230,23 @@
         <default>Play/Pause</default>
         <readonly>false</readonly>
       </property>
+      <property>
+        <name>Device to control</name>
+        <default></default>
+        <type>DEVICE_SELECTOR</type>
+        <multiselect>False</multiselect>
+        <items>
+          <item>tv.c4i</item>
+          <item>media_player.c4i</item>
+          <item>media_service.c4i</item>
+          <item>dvd.c4i</item>
+          <item>plasma.c4i</item>
+          <item>projector.c4i</item>
+          <item>amplifier.c4i</item>
+          <item>receiver.c4i</item>
+        </items>
+        <readonly>false</readonly>
+      </property>
     </properties>
     <commands>
       <command>

@@ -1220,7 +1220,7 @@ function ReceivedFromProxy (idBinding, strCommand, tParams)
 						dbg ('Looking for '..appProxyId)
 						for roomId, deviceId in pairs (RoomIDSources) do
 							if (deviceId == appProxyId) then
-								C4:SendToDevice (roomId, 'SELECT_VIDEO_DEVICE', {deviceid = passthroughProxyDeviceId})
+								C4:SendToDevice (roomId, 'SELECT_VIDEO_DEVICE', {deviceid = Properties['Device to control']})
 							end
 						end
 					end
