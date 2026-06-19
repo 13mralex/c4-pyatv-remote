@@ -1,4 +1,4 @@
-pyatv>=0.16.0
+pyatv>=0.18.0
 falcon
 uvicorn
 requests
